@@ -10,11 +10,8 @@
   },
   "scripts": {
     "postinstall": "./scripts/postinstall.sh",
-    "server": "deno run --allow-all --watch server.ts",
-    "start": "npx serve .",
-    "asbuild": "npm run asbuild:debug && npm run asbuild:release",
-    "asbuild:debug": "asc assembly/index.ts --target debug",
-    "asbuild:release": "asc assembly/index.ts --target release"
+    "start": "deno run --allow-all --watch server.ts",
+    "build": "asc assembly/index.ts --target release -O -o build/script.wasm"
   },
   "exports": {
     ".": {

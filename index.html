@@ -21,34 +21,12 @@
 <html>
 <head>
   <title>SocialExplorer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.15.15/dist/css/uikit.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/uikit@3.15.15/dist/js/uikit.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/uikit@3.15.15/dist/js/uikit-icons.min.js"></script>
   <script type="module">
-    const wasm = await WebAssembly.instantiateStreaming(
-      fetch(new URL("script.wasm", import.meta.url)),
-      {
-        env: Object.assign(Object.create(globalThis), {
-          abort(message, fileName, lineNumber, columnNumber) {
-            // ~lib/builtins/abort(~lib/string/String | null?, ~lib/string/String | null?, u32?, u32?) => void
-            message = __liftString(message >>> 0);
-            fileName = __liftString(fileName >>> 0);
-            lineNumber = lineNumber >>> 0;
-            columnNumber = columnNumber >>> 0;
-            (() => {
-              // @external.js
-              throw Error(`${message} in ${fileName}:${lineNumber}:${columnNumber}`);
-            })();
-          },
-        }),
-        index: {
-          fetch(url) {
-            // assembly/index/fetch(~lib/string/String) => ~lib/object/Object
-            url = __liftString(url >>> 0);
-            return __lowerRecord0(__module0.fetch(url)) || __notnull();
-          },
-        }
-      },
-    )
-    const { memory, add } = wasm.instance.exports
-    document.body.innerText = add(320, 100)
+    const instances = {/**/}
+    console.log(instances)
   </script>
 </head>
 <body></body>

@@ -52,17 +52,16 @@ app.use(ctx => {
   if (ctx.request.method === "GET") {
     if (ctx.request.url.pathname === "/") {
       ctx.response.headers.set("Content-Type", "text/html")
-      ctx.response.body = Deno.readTextFileSync("index.html")
-    } else if (ctx.request.url.pathname === "/script.wasm") {
-      ctx.response.headers.set("Content-Type", "application/wasm")
-      ctx.response.body = Deno.readFileSync("./build/script.wasm")
-    } else if (ctx.request.url.pathname === "/api/instances") {
-      ctx.response.headers.set("Content-Type", "application/json")
-      const instances = db.query("SELECT domain, users FROM instances")
-      ctx.response.body = JSON.stringify(instances.map(([domain, users]) => ({
-        domain,
-        ...(users !== null && { users }),
-      })))
+      ctx.response.body = Deno.readTextFileSync("index.html").replace(
+        /{\/\*\*\/}/g,
+        JSON.stringify(
+          db.query("SELECT domain, users FROM instances")
+            .map(([domain, users]) => ({
+              domain,
+              ...(users !== null && { users }),
+            }))
+        )
+      )
     }
   } else if (ctx.request.method === "POST") {
     if (

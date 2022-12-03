@@ -46,6 +46,8 @@ app.use(await RateLimiter({
   onRateLimit: ctx => console.log("[RATE LIMIT]", ctx.request),
 }))
 
+const suggestURL = "/api/suggest/"
+
 app.use(ctx => {
   if (ctx.request.method === "GET") {
     if (ctx.request.url.pathname === "/") {
@@ -70,25 +72,26 @@ app.use(ctx => {
     } else if (ctx.request.url.pathname === "/api/instances") {
       ctx.response.headers.set("Content-Type", "application/json")
       const instances = db.query("SELECT domain, users FROM instances")
-      ctx.response.body = JSON.stringify(
-        instances.map(([domain, users]) => ({ domain, users }))
-      )
+      ctx.response.body = JSON.stringify(instances.map(([domain, users]) => ({
+        domain,
+        ...(users !== null && { users }),
+      })))
     }
   } else if (ctx.request.method === "POST") {
-    const suggestURL = "/api/suggest/"
     if (
       ctx.request.url.pathname.length > suggestURL.length
       && ctx.request.url.pathname.startsWith(suggestURL)
     ) {
       (async () => {
         try {
-          const domain = ctx.request.url.pathname.slice(suggestURL.length)
-          const nodeManifestData = await fetch(`https://${domain}/.well-known/nodeinfo`)
+          const manifestDomain = ctx.request.url.pathname.slice(suggestURL.length)
+          const nodeManifestData = await fetch(`https://${manifestDomain}/.well-known/nodeinfo`)
           const nodeManifestInfo = await nodeManifestData.json()
-          const nodeData = await fetch(nodeManifestInfo.links[0].href)
+          const nodePath = nodeManifestInfo.links[0].href
+          const domain = new URL(nodePath).hostname
+          const nodeData = await fetch(nodePath)
           const nodeText = await nodeData.text()
           const hash = sha256(nodeText, "utf8", "hex")
-
           const instance = db.query<any>(
             "SELECT hash FROM instances WHERE domain = ?",
             [domain]
@@ -97,11 +100,9 @@ app.use(ctx => {
             instance.length === 0
             || instance[0][0] !== hash
           ) {
-            if (instance.length === 0) {
-              console.log(`[INSTANCE ADD] ${domain}`)
-            } else {
-              console.log(`[INSTANCE UPDATE] ${domain}`)
-            }
+            console.log(
+              `[INSTANCE ${instance.length === 0 ? "ADD" : "UPDATE"}] ${domain}`
+            )
             const nodeInfo = JSON.parse(nodeText)
             db.query(
               `INSERT OR REPLACE INTO instances VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -111,7 +112,7 @@ app.use(ctx => {
                 Date.now(),
                 nodeInfo?.software?.name ?? null,
                 nodeInfo?.software?.version ?? null,
-                nodeInfo?.usage?.openRegistrations ?? null,
+                nodeInfo?.openRegistrations ?? null,
                 nodeInfo?.usage?.users?.total ?? null,
                 nodeInfo?.usage?.localPosts ?? null,
               ]

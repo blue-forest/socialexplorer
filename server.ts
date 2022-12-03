@@ -39,7 +39,7 @@ const app = new Application()
 
 app.use(await RateLimiter({
   windowMs: 1000,
-  max: 4,
+  max: 10,
   headers: true,
   message: "Too many requests, please try again later.",
   statusCode: 429,
@@ -52,20 +52,7 @@ app.use(ctx => {
   if (ctx.request.method === "GET") {
     if (ctx.request.url.pathname === "/") {
       ctx.response.headers.set("Content-Type", "text/html")
-      ctx.response.body = `<!DOCTYPE html><html>`
-        + `<head>`
-        + `<title>SocialExplorer</title>`
-        + `</head>`
-        + `<body>`
-        + `<script type="module">`
-        + `import { add } from "./script.js";`
-        + `document.body.innerText = add(320, 100)`
-        + `</script>`
-        + `</body>`
-        + `</html>`
-    } else if (ctx.request.url.pathname === "/script.js") {
-      ctx.response.headers.set("Content-Type", "text/javascript")
-      ctx.response.body = Deno.readTextFileSync("./build/script.js")
+      ctx.response.body = Deno.readTextFileSync("index.html")
     } else if (ctx.request.url.pathname === "/script.wasm") {
       ctx.response.headers.set("Content-Type", "application/wasm")
       ctx.response.body = Deno.readFileSync("./build/script.wasm")

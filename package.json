@@ -11,12 +11,12 @@
   "scripts": {
     "postinstall": "./scripts/postinstall.sh",
     "start": "deno run --allow-all --watch server.ts",
-    "build": "asc assembly/index.ts --target release -O -o build/script.wasm"
+    "build": "asc assembly/index.ts"
   },
   "exports": {
     ".": {
-      "import": "./build/release.js",
-      "types": "./build/release.d.ts"
+      "import": "./build/script.js",
+      "types": "./build/script.d.ts"
     }
   }
 }

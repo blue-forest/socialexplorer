@@ -16,6 +16,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+declare function test(): void
+declare function fetch(url: string): Object
+
 export function add(a: i32, b: i32): i32 {
+  test()
+  fetch("/api/instances")
   return a + b;
 }

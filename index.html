@@ -21,13 +21,32 @@
 <html>
 <head>
   <title>SocialExplorer</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.15.15/dist/css/uikit.min.css" />
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; width: 100%; display: flex; }
+    nav { padding: 10px 20px; }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.15.15/dist/css/uikit.min.css"/>
+  <script type="module">
+    const instances = [/**/]
+    for(const { domain, users } of instances) {
+      try {
+        const search = await fetch(
+          `https://${domain}/api/v2/search?q=nazim&resolve=false&limit=5`
+        )
+        console.log(await search.json())
+      } catch(e) {
+        console.error(e)
+      }
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/uikit@3.15.15/dist/js/uikit.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/uikit@3.15.15/dist/js/uikit-icons.min.js"></script>
-  <script type="module">
-    const instances = {/**/}
-    console.log(instances)
-  </script>
 </head>
-<body></body>
+<body>
+  <nav class="uk-navbar-container" uk-navbar>
+    <h4>SocialExplorer</h4>
+  </nav>
+  <main id="items">
+  </main>
+</body>
 </html>

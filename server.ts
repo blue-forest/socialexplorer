@@ -24,7 +24,8 @@ import { sha256 } from "https://denopkg.com/chiefbiiko/sha256/mod.ts"
 const db = new DB("data.sqlite")
 db.query(
   `CREATE TABLE IF NOT EXISTS instances (`
-  + `domain TEXT PRIMARY KEY,`
+  + `id INTEGER PRIMARY KEY AUTOINCREMENT,`
+  + `domain TEXT UNIQUE,`
   + `hash TEXT NOT NULL,`
   + `date INTEGER NOT NULL,`
   + `softwareName TEXT,`
@@ -46,14 +47,15 @@ app.use(await RateLimiter({
   onRateLimit: ctx => console.log("[RATE LIMIT]", ctx.request),
 }))
 
-const suggestURL = "/api/suggest/"
+const discoverURL = "/api/discover/"
+const statusesURL = "/api/statuses"
 
 app.use(ctx => {
   if (ctx.request.method === "GET") {
     if (ctx.request.url.pathname === "/") {
       ctx.response.headers.set("Content-Type", "text/html")
       ctx.response.body = Deno.readTextFileSync("index.html").replace(
-        /{\/\*\*\/}/g,
+        /\[\/\*\*\/\]/g,
         JSON.stringify(
           db.query("SELECT domain, users FROM instances")
             .map(([domain, users]) => ({
@@ -62,15 +64,18 @@ app.use(ctx => {
             }))
         )
       )
+    } else if (ctx.request.url.pathname.startsWith(statusesURL)) {
+      const params = new URLSearchParams(ctx.request.url.search)
+      console.log(params)
     }
   } else if (ctx.request.method === "POST") {
     if (
-      ctx.request.url.pathname.length > suggestURL.length
-      && ctx.request.url.pathname.startsWith(suggestURL)
+      ctx.request.url.pathname.length > discoverURL.length
+      && ctx.request.url.pathname.startsWith(discoverURL)
     ) {
       (async () => {
         try {
-          const manifestDomain = ctx.request.url.pathname.slice(suggestURL.length)
+          const manifestDomain = ctx.request.url.pathname.slice(discoverURL.length)
           const nodeManifestData = await fetch(`https://${manifestDomain}/.well-known/nodeinfo`)
           const nodeManifestInfo = await nodeManifestData.json()
           const nodePath = nodeManifestInfo.links[0].href
@@ -105,7 +110,7 @@ app.use(ctx => {
             )
           }
         } catch (e) {
-          console.error("[SUGGEST]", e)
+          console.error("[DISCOVER]", e)
         }
       })()
       ctx.response.body = ""

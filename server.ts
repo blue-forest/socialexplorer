@@ -69,32 +69,25 @@ router.get("/api", ctx => {
     try {
       const ws = ctx.upgrade()
       ws.onmessage = ({ data }) => {
-        const json: { instances?: number[], query?: string, limit?: number } = JSON.parse(data)
-        if (
-          typeof json.instances === "object"
-          && typeof json.query === "string"
-          && json.query.length !== 0
-          && typeof json.limit === "number"
-        ) {
-          for (const id of json.instances) {
-            if (typeof id !== "number") continue
-            const items = db.query("SELECT domain FROM instances WHERE id = ?", [id])
-            if (items.length !== 1) continue
-            const domain = items[0][0]
-            fetch(`https://${domain}/api/v2/search?q=${encodeURIComponent(json.query)}&limit=${json.limit}`)
+        const json: { search?: string } = JSON.parse(data)
+        if (typeof json.search === "string") {
+          for (const [domain] of db.query("SELECT domain FROM instances")) {
+            if (ws.readyState !== 1) break
+            fetch(`https://${domain}/api/v2/search?q=${encodeURIComponent(json.search)}&limit=5`)
               .then(async res => {
                 if (res.ok) {
                   const json: { accounts: any[], hashtags: any[] } = await res.json()
-                  ws.send(JSON.stringify({
-                    domain,
-                    accounts: json.accounts.map(item => ({
-                      id: item.acct,
-                      avatar: item.avatar,
-                      name: item.display_name,
-                      url: item.url,
-                    })),
-                    hashtags: json.hashtags.map(({ name, url }) => ({ name, url })),
-                  }))
+                  if (ws.readyState === 1) {
+                    ws.send(JSON.stringify({
+                      accounts: json.accounts.map(item => ({
+                        id: item.acct,
+                        name: item.display_name || item.username,
+                        avatar: item.avatar,
+                        url: item.url,
+                      })),
+                      hashtags: json.hashtags.map(({ name, url }) => ({ name, url })),
+                    }))
+                  }
                 }
               })
               .catch(e => console.log("Failed to fetch", domain, ":", e))

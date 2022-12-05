@@ -22,52 +22,149 @@
 <head>
   <title>SocialExplorer</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; width: 100%; display: flex; }
-    nav { padding: 10px 20px; }
+    @import url('https://fonts.googleapis.com/css2?family=Lexend&display=swap');
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background-color: black;
+      color: white;
+      font-family: "Lexend", sans-serif;
+    }
+    a { text-decoration: none; }
+    .multi-select-display, .multi-select-options {
+      color: black;
+    }
+    .top {
+      text-align: center;
+      background-color: #333;
+      padding: 0.5em 0;
+    }
+    .top h4 {
+      margin: 0;
+      padding: 0;
+      margin-bottom: 10px;
+    }
+    main { width: 100%; }
+    #items-search > div { flex: 1; padding: 20px; }
+    #items-search h2 { text-align: center; }
+    #users-list, #hashtags-list {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    #users-list > div, #hashtags-list > div {
+      flex: 1;
+      padding: 10px;
+    }
+    #users-list > div > a > img { vertical-align: middle; }
   </style>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.15.15/dist/css/uikit.min.css"/>
+</head>
+<body>
+  <div class="top">
+    <h4>SocialExplorer</h4>
+    <div>
+      Mode :
+      <button id="explore" disabled>Explore</button>
+      <button id="find">Find</button>
+    </div>
+    <form id="find-search" style="margin-top:10px;display:none">
+      <input type="text" placeholder="User or hashtag" id="search"/>
+      <button type="submit">Search</button>
+    </form>
+  </div>
+  <main id="items-explore"></main>
+  <main id="items-search" style="display:none;flex-direction:row">
+    <div>
+      <h2>Users</h2>
+      <div id="users-list"></div>
+    </div>
+    <div>
+      <h2>Hashtags</h2>
+      <div id="hashtags-list"></div>
+    </div>
+  </main>
   <script type="module">
-    const instances = [/**/]
-    const items = { accounts: {}, hashtags: {} }
-    let ws
+    let mode = "explore", ws
+
+    const explore = document.getElementById("explore")
+    const find = document.getElementById("find")
+    const findSearch = document.getElementById("find-search")
+    const search = document.getElementById("search")
+    const itemsExplore = document.getElementById("items-explore")
+    const itemsSearch = document.getElementById("items-search")
+    const usersList = document.getElementById("users-list")
+    const hashtagsList = document.getElementById("hashtags-list")
+
+    explore.onclick = () => {
+      mode = "explore"
+      explore.disabled = true
+      find.disabled = false
+      findSearch.style.display = "none"
+      itemsSearch.style.display = "none"
+      itemsExplore.style.display = "flex"
+    }
+
+    find.onclick = () => {
+      mode = "find"
+      find.disabled = true
+      explore.disabled = false
+      findSearch.style.display = "block"
+      itemsExplore.style.display = "none"
+      itemsSearch.style.display = "flex"
+    }
+
+    findSearch.onsubmit = e => {
+      e.preventDefault()
+      document.activeElement.blur()
+      usersList.innerHTML = ""
+      hashtagsList.innerHTML = ""
+      send({ search: search.value })
+    }
+
     function send(message) {
       const jsonMessage = JSON.stringify(message)
       if(typeof ws === "undefined") {
         ws = new WebSocket(`ws://${window.location.host}/api`)
         ws.onmessage = (event) => {
-          const { domain, accounts, hashtags } = JSON.parse(event.data)
-          for(const { id, ...account } of accounts) {
-            if(typeof items.accounts[id] === "undefined") {
-              items.accounts[id] = account
+          const { accounts, hashtags } = JSON.parse(event.data)
+          if(typeof accounts !== "undefined") {
+            for(const { id, name, avatar, url } of accounts) {
+              const previousElement = usersList.querySelector(`[data-id="${id}"]`)
+              if(!previousElement) {
+                const element = document.createElement("div")
+                element.setAttribute("data-id", id)
+                element.innerHTML = `
+                  <a href="${url}" target="_blank">
+                    <img src="${avatar}" width="48" height="48"/>
+                    <span>${name}</span>
+                  </a>
+                `
+                usersList.appendChild(element)
+              }
             }
           }
-          for(const { name, url } of hashtags) {
-            if(typeof items.hashtags[name] === "undefined") {
-              items.hashtags[name] = []
+          if(typeof hashtags !== "undefined") {
+            for(const { name, url } of hashtags) {
+              const previousElement = hashtagsList.querySelector(`[data-name="${name}"]`)
+              if(!previousElement) {
+                const element = document.createElement("div")
+                element.setAttribute("data-name", name)
+                element.innerHTML = `
+                  <a href="${url}" target="_blank">
+                    <span>#${name}</span>
+                  </a>
+                `
+                hashtagsList.appendChild(element)
+              }
             }
-            items.hashtags[name].push(url)
           }
-          console.log(items)
         }
         ws.onopen = () => ws.send(jsonMessage)
       } else {
         ws.send(jsonMessage)
       }
     }
-    send({
-      instances: instances.map(instance => instance.id),
-      query: "mastodon",
-      limit: 5,
-    })
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/uikit@3.15.15/dist/js/uikit.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/uikit@3.15.15/dist/js/uikit-icons.min.js"></script>
-</head>
-<body>
-  <nav class="uk-navbar-container" uk-navbar>
-    <h4>SocialExplorer</h4>
-  </nav>
-  <main id="items">
-  </main>
 </body>
 </html>

@@ -17,9 +17,8 @@
  */
 
 import { DB } from "https://deno.land/x/sqlite/mod.ts"
-import { Application } from "https://deno.land/x/oak/mod.ts"
+import { Application, Router } from "https://deno.land/x/oak/mod.ts"
 import { RateLimiter } from "https://deno.land/x/oak_rate_limit/mod.ts"
-import { sha256 } from "https://denopkg.com/chiefbiiko/sha256/mod.ts"
 
 const db = new DB("data.sqlite")
 db.query(
@@ -47,76 +46,69 @@ app.use(await RateLimiter({
   onRateLimit: ctx => console.log("[RATE LIMIT]", ctx.request),
 }))
 
-const discoverURL = "/api/discover/"
-const statusesURL = "/api/statuses"
+const router = new Router()
 
-app.use(ctx => {
-  if (ctx.request.method === "GET") {
-    if (ctx.request.url.pathname === "/") {
-      ctx.response.headers.set("Content-Type", "text/html")
-      ctx.response.body = Deno.readTextFileSync("index.html").replace(
-        /\[\/\*\*\/\]/g,
-        JSON.stringify(
-          db.query("SELECT domain, users FROM instances")
-            .map(([domain, users]) => ({
-              domain,
-              ...(users !== null && { users }),
-            }))
-        )
-      )
-    } else if (ctx.request.url.pathname.startsWith(statusesURL)) {
-      const params = new URLSearchParams(ctx.request.url.search)
-      console.log(params)
-    }
-  } else if (ctx.request.method === "POST") {
-    if (
-      ctx.request.url.pathname.length > discoverURL.length
-      && ctx.request.url.pathname.startsWith(discoverURL)
-    ) {
-      (async () => {
-        try {
-          const manifestDomain = ctx.request.url.pathname.slice(discoverURL.length)
-          const nodeManifestData = await fetch(`https://${manifestDomain}/.well-known/nodeinfo`)
-          const nodeManifestInfo = await nodeManifestData.json()
-          const nodePath = nodeManifestInfo.links[0].href
-          const domain = new URL(nodePath).hostname
-          const nodeData = await fetch(nodePath)
-          const nodeText = await nodeData.text()
-          const hash = sha256(nodeText, "utf8", "hex")
-          const instance = db.query<any>(
-            "SELECT hash FROM instances WHERE domain = ?",
-            [domain]
-          )
-          if (
-            instance.length === 0
-            || instance[0][0] !== hash
-          ) {
-            console.log(
-              `[INSTANCE ${instance.length === 0 ? "ADD" : "UPDATE"}] ${domain}`
-            )
-            const nodeInfo = JSON.parse(nodeText)
-            db.query(
-              `INSERT OR REPLACE INTO instances VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-              [
-                domain,
-                hash,
-                Date.now(),
-                nodeInfo?.software?.name ?? null,
-                nodeInfo?.software?.version ?? null,
-                nodeInfo?.openRegistrations ?? null,
-                nodeInfo?.usage?.users?.total ?? null,
-                nodeInfo?.usage?.localPosts ?? null,
-              ]
-            )
+router.get("/", ctx => {
+  ctx.response.headers.set("Content-Type", "text/html")
+  ctx.response.body = Deno.readTextFileSync("index.html").replace(
+    /\[\/\*\*\/\]/g,
+    JSON.stringify(db.query("SELECT id, domain, users FROM instances")
+      .map(([id, domain, users]) => ({
+        id,
+        domain,
+        ...(users !== null && { users }),
+      }))
+    )
+  )
+})
+
+router.get("/api", ctx => {
+  if (!ctx.isUpgradable) {
+    ctx.throw(400, "WebSockets are required.")
+  } else {
+    try {
+      const ws = ctx.upgrade()
+      ws.onmessage = ({ data }) => {
+        const json: { instances?: number[], query?: string, limit?: number } = JSON.parse(data)
+        if (
+          typeof json.instances === "object"
+          && typeof json.query === "string"
+          && json.query.length !== 0
+          && typeof json.limit === "number"
+        ) {
+          for (const id of json.instances) {
+            if (typeof id !== "number") continue
+            const items = db.query("SELECT domain FROM instances WHERE id = ?", [id])
+            if (items.length !== 1) continue
+            const domain = items[0][0]
+            fetch(`https://${domain}/api/v2/search?q=${encodeURIComponent(json.query)}&limit=${json.limit}`)
+              .then(async res => {
+                if (res.ok) {
+                  const json: { accounts: any[], hashtags: any[] } = await res.json()
+                  ws.send(JSON.stringify({
+                    domain,
+                    accounts: json.accounts.map(item => ({
+                      id: item.acct,
+                      avatar: item.avatar,
+                      name: item.display_name,
+                      url: item.url,
+                    })),
+                    hashtags: json.hashtags.map(({ name, url }) => ({ name, url })),
+                  }))
+                }
+              })
+              .catch(e => console.log("Failed to fetch", domain, ":", e))
           }
-        } catch (e) {
-          console.error("[DISCOVER]", e)
         }
-      })()
-      ctx.response.body = ""
+      }
+    } catch (e) {
+      console.error("[API ERROR]", e)
     }
   }
 })
+
+app.use(router.routes())
+app.use(router.allowedMethods())
 
 const envPort = Deno.env.get("PORT")
 const port = envPort ? parseInt(envPort) : 3000

@@ -29,10 +29,12 @@ const instances: {
   exclude: string[]
 } = JSON.parse(Deno.readTextFileSync("instances.json"))
 
-const added: string[] = []
+const added = new Set<string>()
+
+for(const instance of instances.include) scan(instance)
 
 async function scan(instance: string) {
-  console.log("SCAN", instance)
+  //console.log("SCAN", instance)
   try {
     const response = await instanceSearch(instance, search)
     if(response.status === 200) {
@@ -43,13 +45,14 @@ async function scan(instance: string) {
           if(
             domain
             && domain !== instance
-            && !added.includes(domain)
+            && !added.has(domain)
             && !instances.include.includes(domain)
             && !instances.exclude.includes(domain)
           ) {
             console.log("==> ADD", domain)
-            added.push(domain)
-            await scan(domain)
+            added.add(instance)
+            add(domain)
+            scan(domain)
           }
         }
       }
@@ -57,12 +60,12 @@ async function scan(instance: string) {
   } catch(e) {}
 }
 
-for(const instance of instances.include) {
-  await scan(instance)
+function add(instance: string) {
+  const instancesToUpdate: {
+    include: string[]
+    exclude: string[]
+  } = JSON.parse(Deno.readTextFileSync("instances.json"))
+  instancesToUpdate.include.push(instance)
+  instancesToUpdate.include.sort()
+  Deno.writeTextFileSync("instances.json", JSON.stringify(instancesToUpdate, null, 2))
 }
-
-instances.include.push(...added)
-
-instances.include.sort()
-
-Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))

@@ -64,7 +64,15 @@
       flex: 1;
       padding: 10px;
     }
-    #users-list > div > a > img { vertical-align: middle; }
+    #users-list > div > a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+    }
+    #users-list > div > a > span {
+      text-align: center;
+    }
     #search { width: 30%; }
   </style>
 </head>
@@ -87,15 +95,24 @@
     </div>
   </main>
   <script type="module">
+    let instances = []
+
     const findSearch = document.getElementById("find-search")
     const search = document.getElementById("search")
     const itemsSearch = document.getElementById("items-search")
     const usersList = document.getElementById("users-list")
     const hashtagsList = document.getElementById("hashtags-list")
 
+    const params = new URLSearchParams(window.location.search)
+    if(params.has("q")) {
+      search.value = params.get("q")
+      startSearch(params.get("q"))
+    }
+
     findSearch.onsubmit = e => {
       e.preventDefault()
       if(search.value) {
+        window.history.pushState({}, "", `?q=${search.value}`)
         document.activeElement.blur()
         usersList.innerHTML = ""
         hashtagsList.innerHTML = ""
@@ -104,9 +121,20 @@
     }
 
     async function startSearch(value) {
-      const { accounts, hashtags } = await request("mastodon.social", value)
-      if(typeof accounts !== "undefined") {
-        for(const { acct, display_name, username, avatar, url } of accounts) {
+      if(instances.length === 0) {
+        const response = await fetch("https://raw.githubusercontent.com/blue-forest/socialexplorer/master/instances.json")
+        instances = await response.json()
+      }
+      for(const instance of instances) {
+        render(instance, value)
+      }
+    }
+
+    async function render(instance, value) {
+      const res = await request(instance, value)
+      if(!res) return
+      if(typeof res.accounts !== "undefined") {
+        for(const { acct, display_name, username, avatar, url } of res.accounts) {
           const previousElement = usersList.querySelector(`[data-id="${acct}"]`)
           if(!previousElement) {
             const element = document.createElement("div")
@@ -115,14 +143,21 @@
               <a href="${url}" target="_blank">
                 <img src="${avatar}" width="48" height="48"/>
                 <span>${display_name || username}</span>
+                <span>${acct}</span>
               </a>
             `
             usersList.appendChild(element)
+            const subInstance = acct.split("@")[1]
+            if(subInstance && !instances.includes(subInstance)) {
+              console.log("[FOUND]", subInstance)
+              instances.push(subInstance)
+              render(subInstance, value)
+            }
           }
         }
       }
-      if(typeof hashtags !== "undefined") {
-        for(const { name, url } of hashtags) {
+      if(typeof res.hashtags !== "undefined") {
+        for(const { name, url } of res.hashtags) {
           const previousElement = hashtagsList.querySelector(`[data-name="${name}"]`)
           if(!previousElement) {
             const element = document.createElement("div")
@@ -136,6 +171,7 @@
           }
         }
       }
+      console.log("[DONE] " + instance)
     }
 
     async function request(instance, value) {
@@ -146,12 +182,24 @@
           if(xhr.status === 200) {
             resolve(JSON.parse(xhr.response))
           } else {
-            reject(xhr.statusText)
+            resolve()
+            try {
+              onError(instance, "Error " + xhr.status, JSON.parse(xhr.response))
+            } catch(e) {
+              onError(instance, "Error " + xhr.status, xhr.statusText)
+            }
           }
         }
-        xhr.onerror = () => reject(xhr.statusText)
+        xhr.onerror = () => {
+          resolve()
+          onError(instance, "Network error")
+        }
         xhr.send()
       })
+    }
+
+    function onError(instance, description, error) {
+      console.log("[ERROR]", instance, description, ...error ? [error] : [])
     }
   </script>
 </body>

@@ -1,2 +1,5 @@
 node_modules/
 data.sqlite
+key.pem
+key.pub
+data.json

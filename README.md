@@ -1,10 +1,10 @@
 
 # SocialExplorer
 
-SocialExplorer is a web application that allows users to explore all major
-ActivityPub servers like [Mastodon](https://github.com/mastodon/mastodon),
-[Pleroma](https://git.pleroma.social/pleroma),
+SocialExplorer is a set of tools to explore the ActivityPub network with major
+instances like [Mastodon](https://github.com/mastodon/mastodon),
 [PeerTube](https://github.com/Chocobozzz/PeerTube),
+[Pleroma](https://git.pleroma.social/pleroma),
 [Pixelfed](https://github.com/pixelfed/pixelfed) and more.
 
 An instance of SocialExplorer is available at [socialexplorer.blueforest.cc](https://socialexplorer.blueforest.cc).

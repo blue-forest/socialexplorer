@@ -23,20 +23,16 @@ const instances: {
   exclude: string[]
 } = JSON.parse(Deno.readTextFileSync("instances.json"))
 
-let update = false
-
 for (const server of await servers.json()) {
   if (
     !instances.include.includes(server.domain)
     && !instances.exclude.includes(server.domain)
   ) {
-    update = true
     instances.include.push(server.domain)
   }
 }
 
-if (update) {
-  instances.include.sort()
-  instances.exclude.sort()
-  Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))
-}
+instances.include.sort()
+instances.exclude.sort()
+
+Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))

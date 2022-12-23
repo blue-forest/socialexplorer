@@ -23,27 +23,38 @@ const instances: {
 
 const done = new Set()
 
+let update = false
+
 for (const instance of [ ...instances.include, ...instances.exclude ]) {
   if (done.has(instance)) {
     console.error("Duplicate instance", instance)
-    Deno.exit(1)
+    const index = instances.include.indexOf(instance)
+    instances.include.splice(index, 1)
+    update = true
   }
   done.add(instance)
 }
 
 await Promise.all([
   ...instances.include.map(async instance => {
+    let ok = true
     try {
       const response = await testInstance(instance)
       if (response.status !== 200) {
-        console.error("Instance should be working", instance)
-        console.error(response.status, await response.text())
-        Deno.exit(1)
+        console.error("Instance should be working", instance, response.status)
+        //console.error(response.status, await response.text())
+        ok = false
       }
-    } catch (error) {
+    } catch (e) {
       console.error("Instance should be working", instance)
-      console.error(error)
-      Deno.exit(1)
+      //console.error(error)
+      ok = false
+    }
+    if (!ok) {
+      const index = instances.include.indexOf(instance)
+      instances.include.splice(index, 1)
+      instances.exclude.push(instance)
+      update = true
     }
   }),
   ...instances.exclude.map(async instance => {
@@ -51,11 +62,20 @@ await Promise.all([
       const response = await testInstance(instance)
       if (response.status === 200) {
         console.error("Instance should not be working", instance)
-        Deno.exit(1)
+        const index = instances.exclude.indexOf(instance)
+        instances.exclude.splice(index, 1)
+        instances.include.push(instance)
+        update = true
       }
-    } catch (error) {}
+    } catch (e) {}
   }),
 ])
+
+if (update) {
+  instances.include.sort()
+  instances.exclude.sort()
+  Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))
+}
 
 function testInstance(instance: string) {
   return fetch(`https://${instance}/api/v2/search?q=hello&limit=5`)

@@ -41,18 +41,18 @@ for (const instance of [ ...instances.include, ...instances.exclude ]) {
   done.add(instance)
 }
 
-await Promise.all([
+const promises = [
   ...instances.include.map(async instance => {
     let ok = true
     try {
       const response = await testInstance(instance)
       if (response.status !== 200) {
-        console.error("Instance should be working", instance, response.status)
+        console.error("include -> exclude", instance, response.status)
         //console.error(response.status, await response.text())
         ok = false
       }
     } catch (e) {
-      console.error("Instance should be working", instance)
+      console.error("include -> exclude", instance)
       //console.error(error)
       ok = false
     }
@@ -67,7 +67,7 @@ await Promise.all([
     try {
       const response = await testInstance(instance)
       if (response.status === 200) {
-        console.error("Instance should not be working", instance)
+        console.error("include <- exclude", instance)
         const index = instances.exclude.indexOf(instance)
         instances.exclude.splice(index, 1)
         instances.include.push(instance)
@@ -75,7 +75,15 @@ await Promise.all([
       }
     } catch (e) {}
   }),
-])
+]
+
+const PARALLEL = false
+
+if(PARALLEL) {
+  await Promise.all(promises)
+} else {
+  for (const promise of promises) await promise
+}
 
 if (update) {
   instances.include.sort()
@@ -83,6 +91,12 @@ if (update) {
   Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))
 }
 
-function testInstance(instance: string) {
-  return fetch(`https://${instance}/api/v2/search?q=${search}&limit=5`)
+async function testInstance(instance: string) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 20000)
+  const response = await fetch(`https://${instance}/api/v2/search?q=${search}&limit=5`, {
+    signal: controller.signal,
+  })
+  clearTimeout(timeout)
+  return response
 }

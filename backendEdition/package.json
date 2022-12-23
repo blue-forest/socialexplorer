@@ -1,0 +1,9 @@
+{
+  "license": "AGPL-3.0",
+	"scripts": {
+		"start": "parcel index.html",
+		"build": "parcel build index.html",
+		"server": "deno run --allow-all --watch server.ts",
+		"bootstrap": "deno run --allow-all bootstrap.ts"
+	}
+}

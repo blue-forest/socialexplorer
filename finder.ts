@@ -50,7 +50,7 @@ async function scan(instance: string) {
             && !instances.exclude.includes(domain)
           ) {
             console.log("==> ADD", domain)
-            added.add(instance)
+            added.add(domain)
             add(domain)
             scan(domain)
           }

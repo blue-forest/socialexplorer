@@ -44,7 +44,19 @@ for (const instance of [ ...instances.include, ...instances.exclude ]) {
 }
 
 const promises = [
-  ...instances.include.map(async instance => {
+  ...instances.exclude.map(instance => async () => {
+    try {
+      const response = await instanceSearch(instance, search)
+      if (response.status === 200) {
+        console.error("include <- exclude", instance)
+        const index = instances.exclude.indexOf(instance)
+        instances.exclude.splice(index, 1)
+        instances.include.push(instance)
+        update = true
+      }
+    } catch (e) {}
+  }),
+  ...instances.include.map(instance => async () => {
     let ok = true
     try {
       const response = await instanceSearch(instance, search)
@@ -65,30 +77,23 @@ const promises = [
       update = true
     }
   }),
-  ...instances.exclude.map(async instance => {
-    try {
-      const response = await instanceSearch(instance, search)
-      if (response.status === 200) {
-        console.error("include <- exclude", instance)
-        const index = instances.exclude.indexOf(instance)
-        instances.exclude.splice(index, 1)
-        instances.include.push(instance)
-        update = true
-      }
-    } catch (e) {}
-  }),
 ]
 
-const PARALLEL = true
+const PARALLEL = false
 
 if(PARALLEL) {
   await Promise.all(promises)
 } else {
-  for(const promise of promises) await promise
+  for(const promise of promises) await promise()
 }
 
 if (update) {
   instances.include.sort()
   instances.exclude.sort()
+  console.log("Total", {
+    include: instances.include.length,
+    exclude: instances.exclude.length,
+    total: instances.include.length + instances.exclude.length,
+  })
   Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))
 }

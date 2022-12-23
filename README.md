@@ -7,8 +7,7 @@ ActivityPub servers like [Mastodon](https://github.com/mastodon/mastodon),
 [PeerTube](https://github.com/Chocobozzz/PeerTube),
 [Pixelfed](https://github.com/pixelfed/pixelfed) and more.
 
-An instance of SocialExplorer is available at
-[socialexplorer.ml](https://socialexplorer.ml).
+An instance of SocialExplorer is available at [socialexplorer.blueforest.cc](https://socialexplorer.blueforest.cc).
 
 This source code is under the [AGPLv3](./LICENSE) license.
 

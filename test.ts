@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { instanceSearch } from "./utils.ts"
+
 const search = Deno.args[0]
 if(!search) {
   console.error("Missing search term argument")
@@ -45,7 +47,7 @@ const promises = [
   ...instances.include.map(async instance => {
     let ok = true
     try {
-      const response = await testInstance(instance)
+      const response = await instanceSearch(instance, search)
       if (response.status !== 200) {
         console.error("include -> exclude", instance, response.status)
         //console.error(response.status, await response.text())
@@ -65,7 +67,7 @@ const promises = [
   }),
   ...instances.exclude.map(async instance => {
     try {
-      const response = await testInstance(instance)
+      const response = await instanceSearch(instance, search)
       if (response.status === 200) {
         console.error("include <- exclude", instance)
         const index = instances.exclude.indexOf(instance)
@@ -89,15 +91,4 @@ if (update) {
   instances.include.sort()
   instances.exclude.sort()
   Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))
-}
-
-async function testInstance(instance: string) {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 3000)
-  const response = await fetch(`https://${instance}/api/v2/search?q=${search}&limit=5`, {
-    signal: controller.signal,
-    redirect: "manual",
-  })
-  clearTimeout(timeout)
-  return response
 }

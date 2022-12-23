@@ -1,5 +1,5 @@
 /*
- * SocialExplorer.ml
+ * SocialExplorer
  * Copyright © 2019-2022 Blue Forest
  *
  * This program is free software: you can redistribute it and/or modify

@@ -2,7 +2,8 @@
 	"license": "AGPL-3.0",
 	"scripts": {
 		"start": "serve .",
-		"test": "deno run --allow-all test.ts"
+		"test": "deno run --allow-all test.ts",
+		"bootstrap": "deno run --allow-all bootstrap.ts"
 	},
 	"devDependencies": {
 		"serve": "^14.1.2"

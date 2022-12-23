@@ -1,5 +1,5 @@
 <!--
-  SocialExplorer.ml
+  SocialExplorer
   Copyright © 2019-2022 Blue Forest
 
   Repository: https://github.com/blue-forest/socialexplorer
@@ -64,15 +64,13 @@
       flex: 1;
       padding: 10px;
     }
-    #users-list > div > a {
+    #users-list > div > a, #hashtags-list > div > a {
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 10px;
     }
-    #users-list > div > a > span {
-      text-align: center;
-    }
+    #users-list > div > a > span, #hashtags-list > div > a > span { text-align: center; }
     #search { width: 30%; }
   </style>
 </head>
@@ -162,17 +160,15 @@
       }
       if(typeof res.hashtags !== "undefined") {
         for(const { name, url } of res.hashtags) {
-          const previousElement = hashtagsList.querySelector(`[data-name="${name}"]`)
-          if(!previousElement) {
-            const element = document.createElement("div")
-            element.setAttribute("data-name", name)
-            element.innerHTML = `
-              <a href="${url}" target="_blank">
-                <span>#${name}</span>
-              </a>
-            `
-            hashtagsList.appendChild(element)
-          }
+          const domain = url.split("/")[2]
+          const element = document.createElement("div")
+          element.innerHTML = `
+            <a href="${url}" target="_blank">
+              <span>#${name}</span>
+              <span>${domain}</span>
+            </a>
+          `
+          hashtagsList.appendChild(element)
         }
       }
       console.log("[DONE] " + instance)
@@ -181,7 +177,7 @@
     async function request(instance, value) {
       const xhr = new XMLHttpRequest()
       xhr.open("GET", `https://${instance}/api/v2/search?q=${value}&limit=5`)
-      xhr.setRequestHeader("Access-Control-Allow-Origin", "*")
+      //xhr.setRequestHeader("Access-Control-Allow-Origin", "*")
       return new Promise((resolve, reject) => {
         xhr.onload = () => {
           if(xhr.status === 200) {

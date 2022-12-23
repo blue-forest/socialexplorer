@@ -16,13 +16,27 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { DB } from "https://deno.land/x/sqlite/mod.ts"
-import discover from "./discover.ts"
-
-const db = new DB("./data.sqlite")
-
-discover("blueforest.cc", db)
-discover("mastodon.social", db)
-
 const servers = await fetch("https://api.joinmastodon.org/servers")
-for (const server of await servers.json()) discover(server.domain, db)
+
+const instances: {
+  include: string[]
+  exclude: string[]
+} = JSON.parse(Deno.readTextFileSync("instances.json"))
+
+let update = false
+
+for (const server of await servers.json()) {
+  if (
+    !instances.include.includes(server.domain)
+    && !instances.exclude.includes(server.domain)
+  ) {
+    update = true
+    instances.include.push(server.domain)
+  }
+}
+
+if (update) {
+  instances.include.sort()
+  instances.exclude.sort()
+  Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))
+}

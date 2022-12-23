@@ -1,0 +1,170 @@
+<!--
+  SocialExplorer.ml
+  Copyright © 2019-2022 Blue Forest
+
+  Repository: https://github.com/blue-forest/socialexplorer
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published
+  by the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU Affero General Public License for more details.
+
+  You should have received a copy of the GNU Affero General Public License
+  along with this program. If not, see <https://www.gnu.org/licenses/>.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SocialExplorer</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lexend&display=swap');
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background-color: black;
+      color: white;
+      font-family: "Lexend", sans-serif;
+    }
+    a { text-decoration: none; }
+    .multi-select-display, .multi-select-options {
+      color: black;
+    }
+    .top {
+      text-align: center;
+      background-color: #333;
+      padding: 0.5em 0;
+    }
+    .top h4 {
+      margin: 0;
+      padding: 0;
+      margin-bottom: 10px;
+    }
+    main { width: 100%; }
+    #items-search > div { flex: 1; padding: 20px; }
+    #items-search h2 { text-align: center; }
+    #users-list, #hashtags-list {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    #users-list > div, #hashtags-list > div {
+      flex: 1;
+      padding: 10px;
+    }
+    #users-list > div > a > img { vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h4>SocialExplorer</h4>
+    <div>
+      Mode :
+      <button id="explore" disabled>Explore</button>
+      <button id="find">Find</button>
+    </div>
+    <form id="find-search" style="margin-top:10px;display:none">
+      <input type="text" placeholder="User or hashtag" id="search"/>
+      <button type="submit">Search</button>
+    </form>
+  </div>
+  <main id="items-explore"></main>
+  <main id="items-search" style="display:none;flex-direction:row">
+    <div>
+      <h2>Users</h2>
+      <div id="users-list"></div>
+    </div>
+    <div>
+      <h2>Hashtags</h2>
+      <div id="hashtags-list"></div>
+    </div>
+  </main>
+  <script type="module">
+    let mode = "explore", ws
+
+    const explore = document.getElementById("explore")
+    const find = document.getElementById("find")
+    const findSearch = document.getElementById("find-search")
+    const search = document.getElementById("search")
+    const itemsExplore = document.getElementById("items-explore")
+    const itemsSearch = document.getElementById("items-search")
+    const usersList = document.getElementById("users-list")
+    const hashtagsList = document.getElementById("hashtags-list")
+
+    explore.onclick = () => {
+      mode = "explore"
+      explore.disabled = true
+      find.disabled = false
+      findSearch.style.display = "none"
+      itemsSearch.style.display = "none"
+      itemsExplore.style.display = "flex"
+    }
+
+    find.onclick = () => {
+      mode = "find"
+      find.disabled = true
+      explore.disabled = false
+      findSearch.style.display = "block"
+      itemsExplore.style.display = "none"
+      itemsSearch.style.display = "flex"
+    }
+
+    findSearch.onsubmit = e => {
+      e.preventDefault()
+      document.activeElement.blur()
+      usersList.innerHTML = ""
+      hashtagsList.innerHTML = ""
+      send({ search: search.value })
+    }
+
+    function send(message) {
+      const jsonMessage = JSON.stringify(message)
+      if(typeof ws === "undefined") {
+        ws = new WebSocket(`ws://${window.location.host}/api`)
+        ws.onmessage = (event) => {
+          const { accounts, hashtags } = JSON.parse(event.data)
+          if(typeof accounts !== "undefined") {
+            for(const { id, name, avatar, url } of accounts) {
+              const previousElement = usersList.querySelector(`[data-id="${id}"]`)
+              if(!previousElement) {
+                const element = document.createElement("div")
+                element.setAttribute("data-id", id)
+                element.innerHTML = `
+                  <a href="${url}" target="_blank">
+                    <img src="${avatar}" width="48" height="48"/>
+                    <span>${name}</span>
+                  </a>
+                `
+                usersList.appendChild(element)
+              }
+            }
+          }
+          if(typeof hashtags !== "undefined") {
+            for(const { name, url } of hashtags) {
+              const previousElement = hashtagsList.querySelector(`[data-name="${name}"]`)
+              if(!previousElement) {
+                const element = document.createElement("div")
+                element.setAttribute("data-name", name)
+                element.innerHTML = `
+                  <a href="${url}" target="_blank">
+                    <span>#${name}</span>
+                  </a>
+                `
+                hashtagsList.appendChild(element)
+              }
+            }
+          }
+        }
+        ws.onopen = () => ws.send(jsonMessage)
+      } else {
+        ws.send(jsonMessage)
+      }
+    }
+  </script>
+</body>
+</html>

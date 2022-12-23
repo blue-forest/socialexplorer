@@ -31,8 +31,15 @@
       background-color: black;
       color: white;
       font-family: "Lexend", sans-serif;
+      font-size: 20px;
     }
-    a { text-decoration: none; }
+    a {
+      text-decoration: none;
+      color: white;
+    }
+    h2 { margin: 5px 0; }
+    input, button { font-size: 20px; }
+    input::placeholder { font-family: "Lexend", sans-serif; }
     .multi-select-display, .multi-select-options {
       color: black;
     }
@@ -58,23 +65,18 @@
       padding: 10px;
     }
     #users-list > div > a > img { vertical-align: middle; }
+    #search { width: 30%; }
   </style>
 </head>
 <body>
   <div class="top">
-    <h4>SocialExplorer</h4>
-    <div>
-      Mode :
-      <button id="explore" disabled>Explore</button>
-      <button id="find">Find</button>
-    </div>
-    <form id="find-search" style="margin-top:10px;display:none">
+    <h2>SocialExplorer</h2>
+    <form id="find-search" style="margin-top:10px">
       <input type="text" placeholder="User or hashtag" id="search"/>
       <button type="submit">Search</button>
     </form>
   </div>
-  <main id="items-explore"></main>
-  <main id="items-search" style="display:none;flex-direction:row">
+  <main id="items-search" style="display:flex;flex-direction:row">
     <div>
       <h2>Users</h2>
       <div id="users-list"></div>
@@ -85,85 +87,71 @@
     </div>
   </main>
   <script type="module">
-    let mode = "explore", ws
-
-    const explore = document.getElementById("explore")
-    const find = document.getElementById("find")
     const findSearch = document.getElementById("find-search")
     const search = document.getElementById("search")
-    const itemsExplore = document.getElementById("items-explore")
     const itemsSearch = document.getElementById("items-search")
     const usersList = document.getElementById("users-list")
     const hashtagsList = document.getElementById("hashtags-list")
 
-    explore.onclick = () => {
-      mode = "explore"
-      explore.disabled = true
-      find.disabled = false
-      findSearch.style.display = "none"
-      itemsSearch.style.display = "none"
-      itemsExplore.style.display = "flex"
-    }
-
-    find.onclick = () => {
-      mode = "find"
-      find.disabled = true
-      explore.disabled = false
-      findSearch.style.display = "block"
-      itemsExplore.style.display = "none"
-      itemsSearch.style.display = "flex"
-    }
-
     findSearch.onsubmit = e => {
       e.preventDefault()
-      document.activeElement.blur()
-      usersList.innerHTML = ""
-      hashtagsList.innerHTML = ""
-      send({ search: search.value })
+      if(search.value) {
+        document.activeElement.blur()
+        usersList.innerHTML = ""
+        hashtagsList.innerHTML = ""
+        startSearch(search.value)
+      }
     }
 
-    function send(message) {
-      const jsonMessage = JSON.stringify(message)
-      if(typeof ws === "undefined") {
-        ws = new WebSocket(`ws://${window.location.host}/api`)
-        ws.onmessage = (event) => {
-          const { accounts, hashtags } = JSON.parse(event.data)
-          if(typeof accounts !== "undefined") {
-            for(const { id, name, avatar, url } of accounts) {
-              const previousElement = usersList.querySelector(`[data-id="${id}"]`)
-              if(!previousElement) {
-                const element = document.createElement("div")
-                element.setAttribute("data-id", id)
-                element.innerHTML = `
-                  <a href="${url}" target="_blank">
-                    <img src="${avatar}" width="48" height="48"/>
-                    <span>${name}</span>
-                  </a>
-                `
-                usersList.appendChild(element)
-              }
-            }
-          }
-          if(typeof hashtags !== "undefined") {
-            for(const { name, url } of hashtags) {
-              const previousElement = hashtagsList.querySelector(`[data-name="${name}"]`)
-              if(!previousElement) {
-                const element = document.createElement("div")
-                element.setAttribute("data-name", name)
-                element.innerHTML = `
-                  <a href="${url}" target="_blank">
-                    <span>#${name}</span>
-                  </a>
-                `
-                hashtagsList.appendChild(element)
-              }
-            }
+    async function startSearch(value) {
+      const { accounts, hashtags } = await request("mastodon.social", value)
+      if(typeof accounts !== "undefined") {
+        for(const { acct, display_name, username, avatar, url } of accounts) {
+          const previousElement = usersList.querySelector(`[data-id="${acct}"]`)
+          if(!previousElement) {
+            const element = document.createElement("div")
+            element.setAttribute("data-id", acct)
+            element.innerHTML = `
+              <a href="${url}" target="_blank">
+                <img src="${avatar}" width="48" height="48"/>
+                <span>${display_name || username}</span>
+              </a>
+            `
+            usersList.appendChild(element)
           }
         }
-        ws.onopen = () => ws.send(jsonMessage)
-      } else {
-        ws.send(jsonMessage)
       }
+      if(typeof hashtags !== "undefined") {
+        for(const { name, url } of hashtags) {
+          const previousElement = hashtagsList.querySelector(`[data-name="${name}"]`)
+          if(!previousElement) {
+            const element = document.createElement("div")
+            element.setAttribute("data-name", name)
+            element.innerHTML = `
+              <a href="${url}" target="_blank">
+                <span>#${name}</span>
+              </a>
+            `
+            hashtagsList.appendChild(element)
+          }
+        }
+      }
+    }
+
+    async function request(instance, value) {
+      const xhr = new XMLHttpRequest()
+      xhr.open("GET", `https://${instance}/api/v2/search?q=${value}&limit=5`)
+      return new Promise((resolve, reject) => {
+        xhr.onload = () => {
+          if(xhr.status === 200) {
+            resolve(JSON.parse(xhr.response))
+          } else {
+            reject(xhr.statusText)
+          }
+        }
+        xhr.onerror = () => reject(xhr.statusText)
+        xhr.send()
+      })
     }
   </script>
 </body>

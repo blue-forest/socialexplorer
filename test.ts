@@ -77,12 +77,12 @@ const promises = [
   }),
 ]
 
-const PARALLEL = false
+const PARALLEL = true
 
 if(PARALLEL) {
   await Promise.all(promises)
 } else {
-  for (const promise of promises) await promise
+  for(const promise of promises) await promise
 }
 
 if (update) {
@@ -93,9 +93,10 @@ if (update) {
 
 async function testInstance(instance: string) {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 20000)
+  const timeout = setTimeout(() => controller.abort(), 3000)
   const response = await fetch(`https://${instance}/api/v2/search?q=${search}&limit=5`, {
     signal: controller.signal,
+    redirect: "manual",
   })
   clearTimeout(timeout)
   return response

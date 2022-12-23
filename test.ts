@@ -16,6 +16,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+const search = Deno.args[0]
+if(!search) {
+  console.error("Missing search term argument")
+  Deno.exit(1)
+}
+
 const instances: {
   include: string[]
   exclude: string[]
@@ -78,5 +84,5 @@ if (update) {
 }
 
 function testInstance(instance: string) {
-  return fetch(`https://${instance}/api/v2/search?q=hello&limit=5`)
+  return fetch(`https://${instance}/api/v2/search?q=${search}&limit=5`)
 }

@@ -177,7 +177,7 @@
     async function request(instance, value) {
       const xhr = new XMLHttpRequest()
       xhr.open("GET", `https://${instance}/api/v2/search?q=${value}&limit=5`)
-      //xhr.setRequestHeader("Access-Control-Allow-Origin", "*")
+      xhr.setRequestHeader("Access-Control-Allow-Origin", "*")
       return new Promise((resolve, reject) => {
         xhr.onload = () => {
           if(xhr.status === 200) {

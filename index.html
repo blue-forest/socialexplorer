@@ -95,7 +95,7 @@
     </div>
   </main>
   <script type="module">
-    let instances = []
+    let instances
 
     const findSearch = document.getElementById("find-search")
     const search = document.getElementById("search")
@@ -121,11 +121,11 @@
     }
 
     async function startSearch(value) {
-      if(instances.length === 0) {
+      if(typeof instances === "undefined") {
         const response = await fetch("https://raw.githubusercontent.com/blue-forest/socialexplorer/master/instances.json")
         instances = await response.json()
       }
-      for(const instance of instances) {
+      for(const instance of instances.include) {
         render(instance, value)
       }
     }
@@ -148,9 +148,13 @@
             `
             usersList.appendChild(element)
             const subInstance = acct.split("@")[1]
-            if(subInstance && !instances.includes(subInstance)) {
+            if(
+                subInstance
+                && !instances.exclude.includes(subInstance)
+                && !instances.include.includes(subInstance)
+            ) {
               console.log("[FOUND]", subInstance)
-              instances.push(subInstance)
+              instances.include.push(subInstance)
               render(subInstance, value)
             }
           }

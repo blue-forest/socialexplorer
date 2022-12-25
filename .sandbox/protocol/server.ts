@@ -111,28 +111,42 @@ router.get("/users/:id", ctx => {
   if (!user) return
   const userUrl = `https://${data.instance}/users/${id}`
   ctx.response.body = {
-    "@context": "https://www.w3.org/ns/activitystreams",
+    "@context": [
+      "https://www.w3.org/ns/activitystreams",
+      "https://w3id.org/security/v1",
+    ],
     type: "Service",
     id: userUrl,
-    url: userUrl,
     preferredUsername: id,
     name: `Test bot #${id}`,
-    //summary: user.summary,
-    icon: {
-      type: "Image",
-      mediaType: "image/png",
-      url: `https://howtodrawforkids.com/wp-content/uploads/2022/01/how-to-draw-a-robot-for-kids.jpg`,
-    },
+    summary: "This is a simple test bot",
+    icon: [ `https://howtodrawforkids.com/wp-content/uploads/2022/01/how-to-draw-a-robot-for-kids.jpg` ],
     manuallyApprovesFollowers: false,
     discoverable: true,
-    inbox: `${userUrl}/inbox`,
-    outbox: `${userUrl}/outbox`,
-    followers: `${userUrl}/followers`,
     publicKey: {
       id: `${userUrl}#main-key`,
       owner: `${userUrl}`,
       publicKeyPem,
     },
+    inbox: `${userUrl}/inbox`,
+    outbox: `${userUrl}/outbox`,
+    followers: `${userUrl}/followers`,
+  }
+})
+
+
+router.get("/users/:id/followers", ctx => {
+  const id = ctx.params.id
+  if (!id) return
+  const user = data.users[id]
+  if (!user) return
+  const userUrl = `https://${data.instance}/users/${id}`
+  ctx.response.body = {
+    "@context": "https://www.w3.org/ns/activitystreams",
+    type: "OrderedCollection",
+    id: `${userUrl}/followers`,
+    totalItems: user.followers.length,
+    orderedItems: user.followers.map(id => ({ type: "Person", id, url: id })),
   }
 })
 
@@ -209,7 +223,7 @@ router.post("/users/:id/inbox", async ctx => {
 })
 
 
-router.get("/users/:id/followers", ctx => {
+router.get("/users/:id/outbox", ctx => {
   const id = ctx.params.id
   if (!id) return
   const user = data.users[id]
@@ -218,11 +232,20 @@ router.get("/users/:id/followers", ctx => {
   ctx.response.body = {
     "@context": "https://www.w3.org/ns/activitystreams",
     type: "OrderedCollection",
-    id: `${userUrl}/followers`,
-    totalItems: user.followers.length,
-    orderedItems: user.followers.map(id => ({ type: "Person", id, url: id })),
+    id: `${userUrl}/outbox`,
+    totalItems: user.outbox.length,
+    orderedItems: user.outbox.map(o => ({
+      type: "Note",
+      id: o.id,
+      attributedTo: userUrl,
+      content: o.content,
+      to: ["https://www.w3.org/ns/activitystreams#Public"],
+      cc: [],
+      published: new Date().toISOString(),
+    })),
   }
 })
+
 
 app.use(await RateLimiter({
   windowMs: 1000,

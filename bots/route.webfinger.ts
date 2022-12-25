@@ -16,23 +16,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const servers = await fetch("https://api.joinmastodon.org/servers")
+import * as config from "./config.ts"
 
-const instances: {
-  include: string[]
-  exclude: string[]
-} = JSON.parse(Deno.readTextFileSync("instances.json"))
-
-for (const server of await servers.json()) {
-  if(
-    !instances.include.includes(server.domain)
-    && !instances.exclude.includes(server.domain)
-  ) {
-    instances.include.push(server.domain)
+export default function(resource: string | null) {
+  if(!resource) return
+  const acct = resource.split(":")[1]
+  if(!acct) return
+  const split = acct.split("@")
+  if(split.length !== 2 || split[1] !== config.INSTANCE) return
+  return {
+    subject: resource,
+    links: [
+      {
+        rel: "self",
+        type: "application/activity+json",
+        href: `https://${config.INSTANCE}/bots/${split[0]}`,
+      },
+    ],
   }
 }
-
-instances.include.sort()
-instances.exclude.sort()
-
-Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))

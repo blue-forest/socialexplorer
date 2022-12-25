@@ -16,23 +16,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const servers = await fetch("https://api.joinmastodon.org/servers")
+const envPort = Deno.env.get("SOCIAL_EXPLORER_BOTS_PORT")
 
-const instances: {
-  include: string[]
-  exclude: string[]
-} = JSON.parse(Deno.readTextFileSync("instances.json"))
+export const PORT = envPort ? parseInt(envPort) : 8080
 
-for (const server of await servers.json()) {
-  if(
-    !instances.include.includes(server.domain)
-    && !instances.exclude.includes(server.domain)
-  ) {
-    instances.include.push(server.domain)
-  }
+export const INSTANCE = Deno.env.get("SOCIAL_EXPLORER_BOTS_INSTANCE")
+
+if(!INSTANCE) {
+  console.error("No SOCIAL_EXPLORER_BOTS_INSTANCE environment variable set")
+  Deno.exit(1)
 }
-
-instances.include.sort()
-instances.exclude.sort()
-
-Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))

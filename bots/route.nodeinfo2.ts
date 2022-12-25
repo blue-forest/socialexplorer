@@ -16,23 +16,23 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-const servers = await fetch("https://api.joinmastodon.org/servers")
-
-const instances: {
-  include: string[]
-  exclude: string[]
-} = JSON.parse(Deno.readTextFileSync("instances.json"))
-
-for (const server of await servers.json()) {
-  if(
-    !instances.include.includes(server.domain)
-    && !instances.exclude.includes(server.domain)
-  ) {
-    instances.include.push(server.domain)
+export default function() {
+  return {
+    version: "2.0",
+    software: {
+      name: "socialexplorer",
+      version: "0.6.2-0",
+    },
+    protocols: ["activitypub"],
+    services: { inbound: [], outbound: [], },
+    openRegistrations: false,
+    usage: {
+      users: { total: 1 },
+      localPosts: 0,
+      localComments: 0,
+    },
+    metadata: {
+      sourceCode: "https://github.com/blue-forest/socialexplorer",
+    },
   }
 }
-
-instances.include.sort()
-instances.exclude.sort()
-
-Deno.writeTextFileSync("instances.json", JSON.stringify(instances, null, 2))

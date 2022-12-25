@@ -45,12 +45,12 @@ const router = new Router()
 
 router.get("/.well-known/webfinger", ctx => {
   const resource = ctx.request.url.searchParams.get("resource")
-  if (!resource) return
+  if(!resource) return
   const acct = resource.split(":")[1]
-  if (!acct) return
+  if(!acct) return
   const split = acct.split("@")
   console.log("====", data.users, split[0])
-  if (
+  if(
     split.length !== 2
       || split[1] !== data.instance
       || !data.users[split[0]]
@@ -106,9 +106,9 @@ router.get("/nodeinfo/2.0", ctx => {
 
 router.get("/users/:id", ctx => {
   const id = ctx.params.id
-  if (!id) return
+  if(!id) return
   const user = data.users[id]
-  if (!user) return
+  if(!user) return
   const userUrl = `https://${data.instance}/users/${id}`
   ctx.response.body = {
     "@context": [
@@ -137,9 +137,9 @@ router.get("/users/:id", ctx => {
 
 router.get("/users/:id/followers", ctx => {
   const id = ctx.params.id
-  if (!id) return
+  if(!id) return
   const user = data.users[id]
-  if (!user) return
+  if(!user) return
   const userUrl = `https://${data.instance}/users/${id}`
   ctx.response.body = {
     "@context": "https://www.w3.org/ns/activitystreams",
@@ -153,19 +153,19 @@ router.get("/users/:id/followers", ctx => {
 
 router.post("/users/:id/inbox", async ctx => {
   const id = ctx.params.id
-  if (!id) return
+  if(!id) return
 
   const user = data.users[id]
-  if (!user) return
+  if(!user) return
 
   const body = ctx.request.body()
-  if (!body || body.type !== "json") return
+  if(!body || body.type !== "json") return
   const json = await body.value
-  if (!json) return
+  if(!json) return
 
   const userUrl = `https://${data.instance}/users/${id}`
 
-  if (json.type === "Follow") {
+  if(json.type === "Follow") {
     console.log("Followed by", json.actor)
     user.followers.push(json.actor)
     saveData()
@@ -175,7 +175,7 @@ router.post("/users/:id/inbox", async ctx => {
       actor: userUrl,
       object: json,
     }
-  } else if (json.type === "Undo") {
+  } else if(json.type === "Undo") {
     console.log("Unfollowed by", json.actor)
     user.followers = user.followers.filter(f => f !== json.actor)
     saveData()
@@ -185,8 +185,8 @@ router.post("/users/:id/inbox", async ctx => {
       actor: userUrl,
       object: json,
     }
-  } else if (json.type === "Create") {
-    if (json.object.type === "Note") {
+  } else if(json.type === "Create") {
+    if(json.object.type === "Note") {
       console.log("Note by", json.actor, json.object.content)
       user.outbox.push({
         id: json.object.id,
@@ -209,7 +209,7 @@ router.post("/users/:id/inbox", async ctx => {
         },
       }
     }
-  } else if (json.type === "Delete") {
+  } else if(json.type === "Delete") {
     console.log("Delete by", json.actor, json.object)
     user.outbox = user.outbox.filter(o => o.id !== json.object.id)
     saveData()
@@ -225,9 +225,9 @@ router.post("/users/:id/inbox", async ctx => {
 
 router.get("/users/:id/outbox", ctx => {
   const id = ctx.params.id
-  if (!id) return
+  if(!id) return
   const user = data.users[id]
-  if (!user) return
+  if(!user) return
   const userUrl = `https://${data.instance}/users/${id}`
   ctx.response.body = {
     "@context": "https://www.w3.org/ns/activitystreams",

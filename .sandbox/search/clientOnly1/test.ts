@@ -34,7 +34,7 @@ const done = new Set()
 let update = false
 
 for (const instance of [ ...instances.include, ...instances.exclude ]) {
-  if (done.has(instance)) {
+  if(done.has(instance)) {
     console.error("Duplicate instance", instance)
     const index = instances.include.indexOf(instance)
     instances.include.splice(index, 1)
@@ -47,7 +47,7 @@ const promises = [
   ...instances.exclude.map(instance => async () => {
     try {
       const response = await instanceSearch(instance, search)
-      if (response.status === 200) {
+      if(response.status === 200) {
         console.error("include <- exclude", instance)
         const index = instances.exclude.indexOf(instance)
         instances.exclude.splice(index, 1)
@@ -60,7 +60,7 @@ const promises = [
     let ok = true
     try {
       const response = await instanceSearch(instance, search)
-      if (response.status !== 200) {
+      if(response.status !== 200) {
         console.error("include -> exclude", instance, response.status)
         //console.error(response.status, await response.text())
         ok = false
@@ -70,7 +70,7 @@ const promises = [
       //console.error(error)
       ok = false
     }
-    if (!ok) {
+    if(!ok) {
       const index = instances.include.indexOf(instance)
       instances.include.splice(index, 1)
       instances.exclude.push(instance)
@@ -87,7 +87,7 @@ if(PARALLEL) {
   for(const promise of promises) await promise()
 }
 
-if (update) {
+if(update) {
   instances.include.sort()
   instances.exclude.sort()
   console.log("Total", {

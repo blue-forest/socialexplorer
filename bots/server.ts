@@ -16,8 +16,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { Application, Router } from "https://deno.land/x/oak/mod.ts"
+import { Application } from "https://deno.land/x/oak/mod.ts"
 import { RateLimiter } from "https://deno.land/x/oak_rate_limit/mod.ts"
+import * as config from "./config.ts"
+import router from "./router.ts"
 
 const app = new Application()
 
@@ -37,11 +39,8 @@ app.use(async (ctx, next) => {
   await next()
 })
 
-const router = new Router()
 app.use(router.routes())
 app.use(router.allowedMethods())
 
-const envPort = Deno.env.get("PORT")
-const port = envPort ? parseInt(envPort) : 3000
-console.log(`Listening on http://localhost:${port}`)
-await app.listen({ port })
+console.log(`Listening on https://${config.INSTANCE}`)
+await app.listen({ port: config.PORT })

@@ -63,21 +63,21 @@ router.get("/", ctx => {
 })
 
 router.get("/api", ctx => {
-  if (!ctx.isUpgradable) {
+  if(!ctx.isUpgradable) {
     ctx.throw(400, "WebSockets are required.")
   } else {
     try {
       const ws = ctx.upgrade()
       ws.onmessage = ({ data }) => {
         const json: { search?: string } = JSON.parse(data)
-        if (typeof json.search === "string") {
+        if(typeof json.search === "string") {
           for (const [domain] of db.query("SELECT domain FROM instances")) {
-            if (ws.readyState !== 1) break
+            if(ws.readyState !== 1) break
             fetch(`https://${domain}/api/v2/search?q=${encodeURIComponent(json.search)}&limit=5`)
               .then(async res => {
-                if (res.ok) {
+                if(res.ok) {
                   const json: { accounts: any[], hashtags: any[] } = await res.json()
-                  if (ws.readyState === 1) {
+                  if(ws.readyState === 1) {
                     ws.send(JSON.stringify({
                       accounts: json.accounts.map(item => ({
                         id: item.acct,

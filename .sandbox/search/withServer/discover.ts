@@ -32,7 +32,7 @@ export default async function (manifestDomain: string, db: DB) {
       "SELECT hash FROM instances WHERE domain = ?",
       [domain]
     )
-    if (
+    if(
       instance.length === 0
       || instance[0][0] !== hash
     ) {

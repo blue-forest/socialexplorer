@@ -17,6 +17,7 @@
  */
 
 import { RouterContext } from "https://deno.land/x/oak/mod.ts"
+import { generateKeyPair as generate } from "https://deno.land/x/jose/index.ts"
 
 export function handleResponse(
   context: RouterContext<any, any, any>,
@@ -24,5 +25,15 @@ export function handleResponse(
 ) {
   if(response) {
     context.response.body = response
+  }
+}
+
+export async function generateKeyPair(): Promise<{ public: string, private: string }> {
+  const key = await generate("RS256", {
+    modulusLength: 4096,
+  })
+  return {
+    public: `-----BEGIN PUBLIC KEY-----\n${key.publicKey}\n-----END PUBLIC KEY-----`,
+    private: `-----BEGIN PRIVATE KEY-----\n${key.privateKey}\n-----END PRIVATE KEY-----`,
   }
 }

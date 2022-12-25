@@ -17,13 +17,16 @@
  */
 
 import { DB as SQLite } from "https://deno.land/x/sqlite/mod.ts"
-import { BotData, BotName } from "./types.ts"
+import { BotData, BotId } from "./types.ts"
+import { generateKeyPair } from "./helpers.ts"
 
 const db = new SQLite("data.sqlite")
 
 db.execute(
   "CREATE TABLE IF NOT EXISTS bots ("
-    + "name TEXT PRIMARY KEY,"
+    + "id TEXT PRIMARY KEY,"
+    + "name TEXT NOT NULL,"
+    + "summary TEXT NOT NULL,"
     + "privKey TEXT NOT NULL,"
     + "pubKey TEXT NOT NULL,"
     + "created INTEGER NOT NULL DEFAULT (strftime('%s','now'))"
@@ -35,7 +38,7 @@ db.execute(
     + "bot TEXT NOT NULL,"
     + "follower TEXT NOT NULL,"
     + "created INTEGER NOT NULL DEFAULT (strftime('%s','now')),"
-    + "FOREIGN KEY (bot) REFERENCES bots(name) ON DELETE CASCADE,"
+    + "FOREIGN KEY (bot) REFERENCES bots(id) ON DELETE CASCADE,"
     + "PRIMARY KEY (bot, follower)"
     + ")"
 )
@@ -46,55 +49,60 @@ db.execute(
     + "bot TEXT NOT NULL,"
     + "date INTEGER NOT NULL DEFAULT (strftime('%s','now')),"
     + "content TEXT NOT NULL,"
-    + "FOREIGN KEY (bot) REFERENCES bots(name) ON DELETE CASCADE"
+    + "FOREIGN KEY (bot) REFERENCES bots(id) ON DELETE CASCADE"
     + ")"
 )
 
 export const DB = {
-  registerBot: (name: BotName, publicKey: string, privateKey: string) => {
+  registerBot: async (
+    id: BotId,
+    name: string,
+    summary: string,
+  ) => {
+    const keyPair = await generateKeyPair()
     db.query(
-      "INSERT OR REPLACE INTO bots (name, pubKey, privKey) VALUES (?, ?, ?)",
-      [name, publicKey, privateKey]
+      "INSERT OR REPLACE INTO bots (id, name, summary, pubKey, privKey) VALUES (?, ?, ?, ?, ?)",
+      [id, name, summary, keyPair.public, keyPair.private],
     )
   },
-  getBot: (name: string): BotData | undefined => {
+  getBot: (id: BotId): BotData | undefined => {
     const [bot] = db.query<any>(
-      "SELECT * FROM bots WHERE name = ?",
-      [name],
+      "SELECT name, summary, pubKey, privKey FROM bots WHERE id = ?",
+      [id],
     )
     if(bot) {
       return {
         name: bot[0],
-        privKey: bot[1],
-        pubKey: bot[2],
-        created: new Date(bot[3]),
+        summary: bot[1],
+        privateKey: bot[2],
+        publicKey: bot[3],
       }
     }
   },
 
-  addFollower: (bot: BotName, follower: string) => {
+  addFollower: (bot: BotId, follower: string) => {
     db.query(
       "INSERT OR REPLACE INTO followers (bot, follower) VALUES (?, ?)",
-      [bot, follower]
+      [bot, follower],
     )
   },
-  removeFollower: (bot: BotName, follower: string) => {
+  removeFollower: (bot: BotId, follower: string) => {
     db.query(
       "DELETE FROM followers WHERE bot = ? AND follower = ?",
-      [bot, follower]
+      [bot, follower],
     )
   },
-  getFollowers: (bot: BotName): string[] => {
+  getFollowers: (bot: BotId): string[] => {
     return db.query<any>(
       "SELECT follower FROM followers WHERE bot = ?",
       [bot],
     ).map(follower => follower[0])
   },
 
-  addMessage: (id: string, bot: BotName, content: string) => {
+  addMessage: (id: string, bot: BotId, content: string) => {
     db.query(
       "INSERT OR REPLACE INTO messages (id, bot, content) VALUES (?, ?, ?)",
-      [id, bot, content]
+      [id, bot, content],
     )
   },
 }

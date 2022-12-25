@@ -16,24 +16,24 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-export type BotName = string
+export type BotId = string
 
 export type BotData = {
-  name: BotName
-  privKey: string
-  pubKey: string
-  created: Date
+  name: string
+  summary: string
+  privateKey: string
+  publicKey: string
 }
 
 export type FollowerData = {
-  bot: BotName
+  bot: BotId
   follower: string
   created: Date
 }
 
 export type MessageData = {
   id: string
-  bot: BotName
+  bot: BotId
   date: Date
   content: string
 }

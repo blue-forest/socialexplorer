@@ -16,23 +16,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-export type BotId = string
+import { DB } from "./database.ts"
 
-export type BotData = {
-  name: string
-  summary: string
-  privateKey: string
-  publicKey: string
-}
-
-export type FollowerData = {
-  bot: BotId
-  follower: string
-  created: Date
-}
-
-export type MessageData = {
-  bot: BotId
-  date: Date
-  content: any
+export default function(id: string | null) {
+  if(!id) return
+  const message = DB.getMessage(id)
+  if(!message) return
+  return message.content
 }

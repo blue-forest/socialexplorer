@@ -17,8 +17,9 @@
  */
 
 import { DB as SQLite } from "https://deno.land/x/sqlite/mod.ts"
-import { BotData, BotId } from "./types.ts"
-import { generateKeyPair } from "./helpers.ts"
+import { BotData, BotId, MessageData } from "./types.ts"
+import { generateKeyPair, generateUUID } from "./helpers.ts"
+import * as config from "./config.ts"
 
 const db = new SQLite("data.sqlite")
 
@@ -99,10 +100,60 @@ export const DB = {
     ).map(follower => follower[0])
   },
 
-  addMessage: (id: string, bot: BotId, content: string) => {
+  addMessage: (bot: BotId, content: any): {
+    note: string,
+    create: string,
+  } => {
+    const commonValues = {
+      "@context": "https://www.w3.org/ns/activitystreams",
+      to: "https://www.w3.org/ns/activitystreams#Public",
+      published: new Date().toISOString(),
+    }
+
+    const messagesURL = `https://${config.INSTANCE}/messages/`
+    const botURL = `https://${config.INSTANCE}/bots/${bot}`
+
+    const noteId = generateUUID()
+    const noteMessage = {
+      id: messagesURL + noteId,
+      type: "Note",
+      ...commonValues,
+      attributedTo: botURL,
+      content,
+    }
+
     db.query(
       "INSERT OR REPLACE INTO messages (id, bot, content) VALUES (?, ?, ?)",
-      [id, bot, content],
+      [noteId, bot, JSON.stringify(noteMessage)],
     )
+
+    const createId = generateUUID()
+    const createMessage = {
+      id: messagesURL + createId,
+      type: "Create",
+      ...commonValues,
+      actor: botURL,
+      object: `https://${config.INSTANCE}/messages/${noteId}`
+    }
+
+    db.query(
+      "INSERT OR REPLACE INTO messages (id, bot, content) VALUES (?, ?, ?)",
+      [createId, bot, JSON.stringify(createMessage)],
+    )
+
+    return { note: noteId, create: createId }
   },
+  getMessage: (id: string): MessageData | undefined => {
+    const [message] = db.query<any>(
+      "SELECT bot, date, content FROM messages WHERE id = ?",
+      [id],
+    )
+    if(message) {
+      return {
+        bot: message[0],
+        date: new Date(message[1]),
+        content: JSON.parse(message[2]),
+      }
+    }
+  }
 }

@@ -18,9 +18,10 @@
 
 import { Router } from "https://deno.land/x/oak/mod.ts"
 import { handleResponse } from "./helpers.ts"
-import routeBotsGet from "./route.bots.get.ts"
-import routeNodeInfo from "./route.nodeinfo.ts"
 import routeWebFinger from "./route.webfinger.ts"
+import routeNodeInfo from "./route.nodeinfo.ts"
+import routeBotsGet from "./route.bots.get.ts"
+import routeMessages from "./route.message.ts"
 
 const router = new Router()
 
@@ -48,6 +49,11 @@ router.get("/nodeinfo/2.0", ctx => {
 router.get("/bots/:id", ctx => {
   const id = ctx.params.id
   return handleResponse(ctx, routeBotsGet(id))
+})
+
+router.get("/messages/:id", ctx => {
+  const id = ctx.params.id
+  return handleResponse(ctx, routeMessages(id))
 })
 
 export default router

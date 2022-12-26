@@ -38,7 +38,9 @@ export default function(id: string | null) {
     publicKey: {
       id: `${botURL}#main-key`,
       owner: `${botURL}`,
-      publicKeyPem: bot.publicKey,
+      publicKeyPem: "-----BEGIN PUBLIC KEY-----\n"
+        + bot.publicKey
+        + "\n-----END PUBLIC KEY-----",
     },
     inbox: `${botURL}/inbox`,
     followers: `${botURL}/followers`,

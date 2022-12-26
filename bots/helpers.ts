@@ -17,7 +17,6 @@
  */
 
 import { RouterContext } from "https://deno.land/x/oak/mod.ts"
-import { generateKeyPair as generate } from "https://deno.land/x/jose/index.ts"
 
 export function handleResponse(
   context: RouterContext<any, any, any>,
@@ -28,12 +27,25 @@ export function handleResponse(
   }
 }
 
+async function exportKey(format: "spki" | "pkcs8", key: CryptoKey) {
+  const base = await crypto.subtle.exportKey(format, key)
+  const bytes = String.fromCharCode(...new Uint8Array(base))
+  return btoa(bytes)
+}
+
 export async function generateKeyPair(): Promise<{ public: string, private: string }> {
-  const key = await generate("RS256", {
-    modulusLength: 4096,
-  })
+  const { publicKey, privateKey } = await crypto.subtle.generateKey(
+    {
+      name: "RSA-OAEP",
+      modulusLength: 4096,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-256",
+    },
+    true,
+    ["encrypt", "decrypt"],
+  )
   return {
-    public: `-----BEGIN PUBLIC KEY-----\n${key.publicKey}\n-----END PUBLIC KEY-----`,
-    private: `-----BEGIN PRIVATE KEY-----\n${key.privateKey}\n-----END PRIVATE KEY-----`,
+    public: await exportKey("spki", publicKey),
+    private: await exportKey("pkcs8", privateKey),
   }
 }

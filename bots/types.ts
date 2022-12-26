@@ -31,8 +31,16 @@ export type FollowerData = {
   created: Date
 }
 
-export type MessageData = {
+export type ObjectData = {
+  type: "Note"
   bot: BotId
   date: Date
-  content: any
+  content: string
+}
+
+export type ActivityData = {
+  type: "Create"
+  bot: BotId
+  date: Date
+  object: any
 }

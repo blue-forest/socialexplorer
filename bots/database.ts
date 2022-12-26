@@ -17,7 +17,7 @@
  */
 
 import { DB as SQLite } from "https://deno.land/x/sqlite/mod.ts"
-import { BotData, BotId, MessageData } from "./types.ts"
+import { BotData, BotId, ObjectData } from "./types.ts"
 import { generateKeyPair, generateUUID } from "./helpers.ts"
 import * as config from "./config.ts"
 
@@ -28,8 +28,8 @@ db.execute(
     + "id TEXT PRIMARY KEY,"
     + "name TEXT NOT NULL,"
     + "summary TEXT NOT NULL,"
-    + "privKey TEXT NOT NULL,"
-    + "pubKey TEXT NOT NULL,"
+    + "public TEXT NOT NULL,"
+    + "private TEXT NOT NULL,"
     + "created INTEGER NOT NULL DEFAULT (strftime('%s','now'))"
     + ")"
 )
@@ -45,11 +45,12 @@ db.execute(
 )
 
 db.execute(
-  "CREATE TABLE IF NOT EXISTS messages ("
+  "CREATE TABLE IF NOT EXISTS activities ("
     + "id TEXT PRIMARY KEY,"
+    + "type TEXT NOT NULL,"
     + "bot TEXT NOT NULL,"
     + "date INTEGER NOT NULL DEFAULT (strftime('%s','now')),"
-    + "content TEXT NOT NULL,"
+    + "object TEXT NOT NULL,"
     + "FOREIGN KEY (bot) REFERENCES bots(id) ON DELETE CASCADE"
     + ")"
 )
@@ -62,21 +63,21 @@ export const DB = {
   ) => {
     const keyPair = await generateKeyPair()
     db.query(
-      "INSERT OR REPLACE INTO bots (id, name, summary, pubKey, privKey) VALUES (?, ?, ?, ?, ?)",
+      "INSERT OR REPLACE INTO bots (id, name, summary, public, private) VALUES (?, ?, ?, ?, ?)",
       [id, name, summary, keyPair.public, keyPair.private],
     )
   },
   getBot: (id: BotId): BotData | undefined => {
     const [bot] = db.query<any>(
-      "SELECT name, summary, pubKey, privKey FROM bots WHERE id = ?",
+      "SELECT name, summary, public, private FROM bots WHERE id = ?",
       [id],
     )
     if(bot) {
       return {
         name: bot[0],
         summary: bot[1],
-        privateKey: bot[2],
-        publicKey: bot[3],
+        publicKey: bot[2],
+        privateKey: bot[3],
       }
     }
   },
@@ -143,7 +144,7 @@ export const DB = {
 
     return { note: noteId, create: createId }
   },
-  getMessage: (id: string): MessageData | undefined => {
+  getMessage: (id: string): ObjectData | undefined => {
     const [message] = db.query<any>(
       "SELECT bot, date, content FROM messages WHERE id = ?",
       [id],

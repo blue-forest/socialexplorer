@@ -17,6 +17,8 @@
  */
 
 import { RouterContext } from "https://deno.land/x/oak/mod.ts"
+import * as config from "./config.ts"
+import { ActivityData, ObjectData } from "./types.ts"
 
 export function handleResponse(
   context: RouterContext<any, any, any>,
@@ -55,4 +57,35 @@ export function generateUUID(): string {
     const r = Math.random() * 16 | 0, v = c == "x" ? r : (r & 0x3 | 0x8)
     return v.toString(16)
   })
+}
+
+export function objectToMessage(
+  id: string,
+  data: ObjectData,
+) {
+  return {
+    "@context": "https://www.w3.org/ns/activitystreams",
+    id: `https://${config.INSTANCE}/objects/${id}`,
+    type: data.type,
+    content: data.content,
+    published: data.date.toISOString(),
+    attributedTo: `https://${config.INSTANCE}/bots/${data.bot}`,
+    to: "https://www.w3.org/ns/activitystreams#Public",
+  }
+}
+
+export function activityToMessage(
+  id: string,
+  activity: ActivityData,
+  _object: any,
+  follower?: string,
+) {
+  return {
+    "@context": "https://www.w3.org/ns/activitystreams",
+    id: `https://${config.INSTANCE}/activities/${id}`,
+    type: activity.type,
+    actor: `https://${config.INSTANCE}/bots/${activity.bot}`,
+    object: _object,
+    ...(follower ? { cc: [follower] } : {}),
+  }
 }

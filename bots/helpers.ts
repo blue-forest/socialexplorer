@@ -59,33 +59,31 @@ export function generateUUID(): string {
   })
 }
 
-export function objectToMessage(
-  id: string,
-  data: ObjectData,
-) {
+export function objectToMessage(id: string, data: ObjectData) {
   return {
     "@context": "https://www.w3.org/ns/activitystreams",
     id: `https://${config.INSTANCE}/objects/${id}`,
     type: data.type,
+    attributedTo: `https://${config.INSTANCE}/bots/${data.bot}`,
     content: data.content,
     published: data.date.toISOString(),
-    attributedTo: `https://${config.INSTANCE}/bots/${data.bot}`,
     to: "https://www.w3.org/ns/activitystreams#Public",
   }
 }
 
 export function activityToMessage(
   id: string,
-  activity: ActivityData,
+  data: ActivityData,
   _object: any,
   follower?: string,
 ) {
   return {
     "@context": "https://www.w3.org/ns/activitystreams",
     id: `https://${config.INSTANCE}/activities/${id}`,
-    type: activity.type,
-    actor: `https://${config.INSTANCE}/bots/${activity.bot}`,
+    type: data.type,
+    actor: `https://${config.INSTANCE}/bots/${data.bot}`,
     object: _object,
     ...(follower ? { cc: [follower] } : {}),
+    to: "https://www.w3.org/ns/activitystreams#Public",
   }
 }

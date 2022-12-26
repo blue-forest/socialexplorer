@@ -17,9 +17,8 @@
  */
 
 import { DB as SQLite } from "https://deno.land/x/sqlite/mod.ts"
-import { BotData, BotId, ObjectData } from "./types.ts"
-import { generateKeyPair, generateUUID } from "./helpers.ts"
-import * as config from "./config.ts"
+import { ActivityData, BotData, BotId, ObjectData } from "./types.ts"
+import { generateKeyPair } from "./helpers.ts"
 
 const db = new SQLite("data.sqlite")
 
@@ -30,7 +29,7 @@ db.execute(
     + "summary TEXT NOT NULL,"
     + "public TEXT NOT NULL,"
     + "private TEXT NOT NULL,"
-    + "created INTEGER NOT NULL DEFAULT (strftime('%s','now'))"
+    + "date INTEGER NOT NULL"
     + ")"
 )
 
@@ -38,9 +37,20 @@ db.execute(
   "CREATE TABLE IF NOT EXISTS followers ("
     + "bot TEXT NOT NULL,"
     + "follower TEXT NOT NULL,"
-    + "created INTEGER NOT NULL DEFAULT (strftime('%s','now')),"
+    + "date INTEGER NOT NULL,"
     + "FOREIGN KEY (bot) REFERENCES bots(id) ON DELETE CASCADE,"
     + "PRIMARY KEY (bot, follower)"
+    + ")"
+)
+
+db.execute(
+  "CREATE TABLE IF NOT EXISTS objects ("
+    + "id TEXT PRIMARY KEY,"
+    + "type TEXT NOT NULL,"
+    + "bot TEXT NOT NULL,"
+    + "content TEXT NOT NULL,"
+    + "date INTEGER NOT NULL,"
+    + "FOREIGN KEY (bot) REFERENCES bots(id) ON DELETE CASCADE"
     + ")"
 )
 
@@ -49,9 +59,10 @@ db.execute(
     + "id TEXT PRIMARY KEY,"
     + "type TEXT NOT NULL,"
     + "bot TEXT NOT NULL,"
-    + "date INTEGER NOT NULL DEFAULT (strftime('%s','now')),"
     + "object TEXT NOT NULL,"
-    + "FOREIGN KEY (bot) REFERENCES bots(id) ON DELETE CASCADE"
+    + "date INTEGER NOT NULL,"
+    + "FOREIGN KEY (bot) REFERENCES bots(id) ON DELETE CASCADE,"
+    + "FOREIGN KEY (object) REFERENCES objects(id) ON DELETE CASCADE"
     + ")"
 )
 
@@ -63,8 +74,8 @@ export const DB = {
   ) => {
     const keyPair = await generateKeyPair()
     db.query(
-      "INSERT OR REPLACE INTO bots (id, name, summary, public, private) VALUES (?, ?, ?, ?, ?)",
-      [id, name, summary, keyPair.public, keyPair.private],
+      "INSERT OR REPLACE INTO bots (id, name, summary, public, private, date) VALUES (?, ?, ?, ?, ?, ?)",
+      [id, name, summary, keyPair.public, keyPair.private, Date.now()],
     )
   },
   getBot: (id: BotId): BotData | undefined => {
@@ -84,8 +95,8 @@ export const DB = {
 
   addFollower: (bot: BotId, follower: string) => {
     db.query(
-      "INSERT OR REPLACE INTO followers (bot, follower) VALUES (?, ?)",
-      [bot, follower],
+      "INSERT OR REPLACE INTO followers (bot, follower, date) VALUES (?, ?, ?)",
+      [bot, follower, Date.now()],
     )
   },
   removeFollower: (bot: BotId, follower: string) => {
@@ -101,60 +112,45 @@ export const DB = {
     ).map(follower => follower[0])
   },
 
-  addMessage: (bot: BotId, content: any): {
-    note: string,
-    create: string,
-  } => {
-    const commonValues = {
-      "@context": "https://www.w3.org/ns/activitystreams",
-      to: "https://www.w3.org/ns/activitystreams#Public",
-      published: new Date().toISOString(),
-    }
-
-    const messagesURL = `https://${config.INSTANCE}/messages/`
-    const botURL = `https://${config.INSTANCE}/bots/${bot}`
-
-    const noteId = generateUUID()
-    const noteMessage = {
-      id: messagesURL + noteId,
-      type: "Note",
-      ...commonValues,
-      attributedTo: botURL,
-      content,
-    }
-
+  createObject: (id: string, data: ObjectData) => {
     db.query(
-      "INSERT OR REPLACE INTO messages (id, bot, content) VALUES (?, ?, ?)",
-      [noteId, bot, JSON.stringify(noteMessage)],
+      "INSERT OR REPLACE INTO objects (id, type, bot, content, date) VALUES (?, ?, ?, ?, ?)",
+      [id, data.type, data.bot, data.content, data.date.getTime()],
     )
-
-    const createId = generateUUID()
-    const createMessage = {
-      id: messagesURL + createId,
-      type: "Create",
-      ...commonValues,
-      actor: botURL,
-      object: `https://${config.INSTANCE}/messages/${noteId}`
-    }
-
-    db.query(
-      "INSERT OR REPLACE INTO messages (id, bot, content) VALUES (?, ?, ?)",
-      [createId, bot, JSON.stringify(createMessage)],
-    )
-
-    return { note: noteId, create: createId }
   },
-  getMessage: (id: string): ObjectData | undefined => {
-    const [message] = db.query<any>(
-      "SELECT bot, date, content FROM messages WHERE id = ?",
+  getObject: (id: string): ObjectData | undefined => {
+    const [_object] = db.query<any>(
+      "SELECT type, bot, content, date FROM objects WHERE id = ?",
       [id],
     )
-    if(message) {
+    if(_object) {
       return {
-        bot: message[0],
-        date: new Date(message[1]),
-        content: JSON.parse(message[2]),
+        type: _object[0],
+        bot: _object[1],
+        content: _object[2],
+        date: new Date(_object[3]),
       }
     }
-  }
+  },
+
+  createActivity: (id: string, data: ActivityData) => {
+    db.query(
+      "INSERT OR REPLACE INTO activities (id, type, bot, object, date) VALUES (?, ?, ?, ?, ?)",
+      [id, data.type, data.bot, data.object, data.date.getTime()],
+    )
+  },
+  getActivity: (id: string): ActivityData | undefined => {
+    const [activity] = db.query<any>(
+      "SELECT type, bot, object, date FROM activities WHERE id = ?",
+      [id],
+    )
+    if(activity) {
+      return {
+        type: activity[0],
+        bot: activity[1],
+        object: activity[2],
+        date: new Date(activity[3]),
+      }
+    }
+  },
 }

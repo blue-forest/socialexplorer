@@ -34,13 +34,13 @@ export type FollowerData = {
 export type ObjectData = {
   type: "Note"
   bot: BotId
-  date: Date
   content: string
+  date: Date
 }
 
 export type ActivityData = {
   type: "Create"
   bot: BotId
+  object: string
   date: Date
-  object: any
 }

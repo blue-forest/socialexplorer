@@ -10,6 +10,31 @@ export default {
       { "UserId": id },
     ),
   },
+  items: {
+    retrieve: () => request("GET", "items"),
+    create: (id: string, item: {
+      title: string
+      description: string
+      image: string
+      url: string
+      categories: string[]
+      labels: string[]
+    }) => request(
+      "POST",
+      "item",
+      {
+        "ItemId": id,
+        "IsHidden": false,
+        "Title": item.title,
+        "Description": item.description,
+        "Image": item.image,
+        "Url": item.url,
+        "Categories": item.categories,
+        "Labels": item.labels,
+        "Timestamp": new Date().toISOString(),
+      },
+    ),
+  },
 }
 
 async function request(method: string, path: string, body?: any) {

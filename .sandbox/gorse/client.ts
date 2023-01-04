@@ -3,7 +3,7 @@ const URL = "http://127.0.0.1:8088"
 
 export default {
   users: {
-    retrieve: () => request("GET", "users"),
+    all: () => request("GET", "users"),
     create: (id: string) => request(
       "POST",
       "user",
@@ -11,28 +11,34 @@ export default {
     ),
   },
   items: {
-    retrieve: () => request("GET", "items"),
-    create: (id: string, item: {
-      title: string
-      description: string
-      image: string
+    all: async () => {
+      const response = await request("GET", "items")
+      //console.log("[ITEMS]", response)
+      return (response.Items as any[]).map(i => ({
+        id: i.ItemId,
+      }))
+    },
+    create: (item: {
+      id: string
       url: string
+      date: string
       categories: string[]
       labels: string[]
     }) => request(
       "POST",
       "item",
       {
-        "ItemId": id,
-        "IsHidden": false,
-        "Title": item.title,
-        "Description": item.description,
-        "Image": item.image,
-        "Url": item.url,
+        "ItemId": item.id,
+        "Comment": item.url,
         "Categories": item.categories,
         "Labels": item.labels,
         "Timestamp": new Date().toISOString(),
+        "IsHidden": false,
       },
+    ),
+    delete: (id: string) => request(
+      "DELETE",
+      `item/${id}`,
     ),
   },
 }

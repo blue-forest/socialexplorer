@@ -1,4 +1,5 @@
 import { parseFeed } from "https://deno.land/x/rss/mod.ts"
+import { Hash } from "https://deno.land/x/checksum/mod.ts"
 import urlMetadata from "npm:url-metadata"
 import client from "./client.ts"
 
@@ -10,27 +11,21 @@ const feedData = await parseFeed(await feedResponse.text())
 for(const entry of feedData.entries) {
   const url = entry.links[0].href
   if(!url) continue
-  const metadata = await extractMetadata(
-    url,
-    feedKeywords,
-  )
+  const metadata = await extractMetadata(url)
   if(!metadata) continue
-  const id = btoa(url)
-  console.log("[ITEM]", id, metadata.title, metadata.keywords)
-  client.items.create(id, {
-    title: metadata.title,
-    description: metadata.description,
-    image: metadata.image,
+  const id = new Hash("md5").digestString(url).hex()
+  //console.log("[ITEM]", id, url, metadata.keywords)
+  client.items.create({
+    id,
     url,
-    categories: feedKeywords,
+    date: (entry?.published || new Date()).toISOString(),
     labels: metadata.keywords,
+    categories: feedKeywords,
   })
 }
 
-async function extractMetadata(url: string, parentKeywords: string[]): Promise<{
-  title: string
-  description: string
-  image: string
+async function extractMetadata(url: string): Promise<{
+  //date: string
   keywords: string[]
 } | undefined> {
   try {
@@ -38,12 +33,10 @@ async function extractMetadata(url: string, parentKeywords: string[]): Promise<{
     //console.log("[METADATA]", metadata)
     const lowerTitle = metadata.title.toLowerCase()
     return {
-      title: metadata.title,
-      description: metadata.description,
-      image: metadata.image,
-      keywords: metadata.keywords.split(",")
+      //date: metadata.date,
+      keywords: (metadata.keywords as string).split(",")
         .map(k => k.trim().toLowerCase())
-        .filter(k => k !== lowerTitle),
+        .filter(k => k.length !== 0 && k !== lowerTitle),
     }
   } catch (error) {
     console.error("[ERROR]", error)

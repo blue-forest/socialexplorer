@@ -12,11 +12,14 @@ export default {
   },
   items: {
     all: async () => {
-      const response = await request("GET", "items")
-      //console.log("[ITEMS]", response)
-      return (response.Items as any[]).map(i => ({
-        id: i.ItemId,
-      }))
+      let cursor = ""
+      let items: any[] = []
+      do {
+        const response = await request("GET", `items?cursor=${cursor}`)
+        items = items.concat(response.Items)
+        cursor = response.Cursor
+      } while(cursor)
+      return items.map(i => ({ id: i.ItemId }))
     },
     create: (item: {
       id: string

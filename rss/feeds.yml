@@ -1,0 +1,32 @@
+
+en:
+  9to5linux: https://9to5linux.com/feed/atom
+  cnn: http://rss.cnn.com/rss/edition.rss
+  devcommunity: https://dev.to/feed/
+  engadget: https://www.engadget.com/rss.xml
+  gsmarena: https://www.gsmarena.com/rss-news-reviews.php3
+  itsfoss: https://itsfoss.com/feed/
+  makeuseof: https://www.makeuseof.com/feed/
+  tomshardware: https://www.tomshardware.com/feeds/all
+
+fr:
+  01net: https://www.01net.com/actualites/feed/
+  allocine: https://www.allocine.fr/rss/news.xml
+  blogdumoderateur: https://www.blogdumoderateur.com/feed/
+  clubic: https://www.clubic.com/feed/news.rss
+  cointribune: https://www.cointribune.com/feed/
+  cowcotland: https://feeds.feedburner.com/cowcotland
+  cryptoast: https://cryptoast.fr/feed/
+  developpez: https://web.developpez.com/index/atom
+  ecranlarge: https://www.ecranlarge.com/rss
+  frandroid: https://www.frandroid.com/feed
+  gameblog: https://www.gameblog.fr/rssmap/rss_all.xml
+  journalducoin: https://journalducoin.com/feed/
+  jeuxvideo.com: https://www.jeuxvideo.com/rss/rss-news.xml
+  lemondeinformatique: https://www.lemondeinformatique.fr/flux-rss/thematique/toutes-les-actualites/rss.xml
+  lesjoiesducode: https://lesjoiesducode.fr/feed
+  lesnumeriques: https://www.lesnumeriques.com/rss.xml
+  numerama: https://www.numerama.com/feed
+  phonandroid: https://www.phonandroid.com/feed
+  telerama_ecrans: https://www.telerama.fr/rss/ecrans.xml
+  zdnet: https://www.zdnet.fr/feeds/rss/actualites/

@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         include:
-        - { lang: en, key: cnn, url: http://rss.cnn.com/rss/edition.rss }
+        - { lang: en, key: cnn, url: "http://rss.cnn.com/rss/edition.rss" }
         - { lang: en, key: 9to5linux, url: https://9to5linux.com/feed/atom }
         - { lang: en, key: devcommunity, url: https://dev.to/feed/ }
         - { lang: en, key: itsfoss, url: https://itsfoss.com/feed/ }

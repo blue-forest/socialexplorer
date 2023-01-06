@@ -39,7 +39,7 @@ serve(async req => {
               "Comment": data.url,
               "Categories": data.categories,
               "Labels": data.labels,
-              "Timestamp": new Date().toISOString(),
+              "Timestamp": data.date,
               "IsHidden": false,
             },
           )

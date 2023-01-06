@@ -56,6 +56,7 @@ for(const [language, urls] of Object.entries(feeds)) {
         url,
         categories: [ language, hostname ],
         labels: await extractTags(url),
+        date: (entry?.published ? new Date(entry.published) : new Date()).toISOString(),
       }, TOKEN)
       if(response !== null) {
         cache.query("INSERT INTO rss (url) VALUES (?)", [url])

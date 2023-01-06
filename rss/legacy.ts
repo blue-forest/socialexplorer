@@ -17,22 +17,11 @@
  */
 
 import { DB } from "https://deno.land/x/sqlite/mod.ts"
+import { parse as parseYaml } from "https://deno.land/std/encoding/yaml.ts"
 import { parseFeed } from "https://deno.land/x/rss/mod.ts"
 import { Hash } from "https://deno.land/x/checksum/mod.ts"
 import urlMetadata from "npm:url-metadata"
 import { request } from "../utils.ts"
-
-const language = Deno.args[0]
-if(!language) {
-  console.error("Please provide a language")
-  Deno.exit(1)
-}
-
-const feed = Deno.args[1]
-if(!feed) {
-  console.error("Please provide a feed URL")
-  Deno.exit(1)
-}
 
 const TOKEN = Deno.env.get("SOCIAL_EXPLORER_TOKEN") || "local"
 const API = Deno.env.get("SOCIAL_EXPLORER_API") || "http://localhost:8080"
@@ -40,32 +29,40 @@ const API = Deno.env.get("SOCIAL_EXPLORER_API") || "http://localhost:8080"
 const cache = new DB("cache.sqlite")
 cache.query("CREATE TABLE IF NOT EXISTS rss (url TEXT PRIMARY KEY)")
 
-const response = await fetch(feed)
-const data = await parseFeed(await response.text())
-for(const entry of data.entries) {
-  if(!entry.links[0]?.href) continue
-  const url = await getRedirectedURL(entry.links[0].href)
-  if(!url) continue
-  if(cache.query(
-    "SELECT url FROM rss WHERE url = ?", [url]).length !== 0
-  ) continue
-  let hostname = new URL(url).hostname
-  if(hostname.startsWith("www.")) hostname = hostname.slice(4)
-  const tags = await extractTags(url)
-  if(tags.length === 0) {
-    console.error("[ERROR - NO TAGS]", url)
-    continue
-  }
-  const response = await request("POST", `${API}/providers/rss`, {
-    id: new Hash("md5").digestString(url).hex(),
-    url,
-    categories: [ language, hostname ],
-    labels: await extractTags(url),
-    date: (entry?.published ? new Date(entry.published) : new Date()).toISOString(),
-  }, TOKEN)
-  if(response !== null) {
-    cache.query("INSERT INTO rss (url) VALUES (?)", [url])
-    console.log("[OK]", url)
+const feeds = parseYaml(await Deno.readTextFile("rss/feeds.yml")) as {
+  [language: string]: string[]
+}
+
+for(const [language, urls] of Object.entries(feeds)) {
+  for(const feed of urls) {
+    const response = await fetch(feed)
+    const data = await parseFeed(await response.text())
+    for(const entry of data.entries) {
+      if(!entry.links[0]?.href) continue
+      const url = await getRedirectedURL(entry.links[0].href)
+      if(!url) continue
+      if(cache.query(
+        "SELECT url FROM rss WHERE url = ?", [url]).length !== 0
+      ) continue
+      let hostname = new URL(url).hostname
+      if(hostname.startsWith("www.")) hostname = hostname.slice(4)
+      const tags = await extractTags(url)
+      if(tags.length === 0) {
+        console.error("[ERROR - NO TAGS]", url)
+        continue
+      }
+      const response = await request("POST", `${API}/providers/rss`, {
+        id: new Hash("md5").digestString(url).hex(),
+        url,
+        categories: [ language, hostname ],
+        labels: await extractTags(url),
+        date: (entry?.published ? new Date(entry.published) : new Date()).toISOString(),
+      }, TOKEN)
+      if(response !== null) {
+        cache.query("INSERT INTO rss (url) VALUES (?)", [url])
+        console.log("[OK]", url)
+      }
+    }
   }
 }
 

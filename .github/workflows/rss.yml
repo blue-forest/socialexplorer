@@ -10,8 +10,41 @@ permissions:
   actions: write
 
 jobs:
-  sync:
+  rss:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+        - { lang: en, key: cnn, url: http://rss.cnn.com/rss/edition.rss }
+        - { lang: en, key: 9to5linux, url: https://9to5linux.com/feed/atom }
+        - { lang: en, key: devcommunity, url: https://dev.to/feed/ }
+        - { lang: en, key: itsfoss, url: https://itsfoss.com/feed/ }
+        - { lang: en, key: engadget, url: https://www.engadget.com/rss.xml }
+        - { lang: en, key: gsmarena, url: https://www.gsmarena.com/rss-news-reviews.php3 }
+        - { lang: en, key: makeuseof, url: https://www.makeuseof.com/feed/ }
+        - { lang: en, key: tomshardware, url: https://www.tomshardware.com/feeds/all }
+        - { lang: fr, key: cryptoast, url: https://cryptoast.fr/feed/ }
+        - { lang: fr, key: cowcotland, url: https://feeds.feedburner.com/cowcotland }
+        - { lang: fr, key: journalducoin, url: https://journalducoin.com/feed/ }
+        - { lang: fr, key: lesjoiesducode, url: https://lesjoiesducode.fr/feed }
+        - { lang: fr, key: developpez_com, url: https://web.developpez.com/index/atom }
+        - { lang: fr, key: 01net, url: https://www.01net.com/actualites/feed/ }
+        - { lang: fr, key: allocine, url: https://www.allocine.fr/rss/news.xml }
+        - { lang: fr, key: blogdumoderateur, url: https://www.blogdumoderateur.com/feed/ }
+        - { lang: fr, key: clubic, url: https://www.clubic.com/feed/news.rss }
+        - { lang: fr, key: cointribune, url: https://www.cointribune.com/feed/ }
+        - { lang: fr, key: ecranlarge, url: https://www.ecranlarge.com/rss }
+        - { lang: fr, key: frandroid, url: https://www.frandroid.com/feed }
+        - { lang: fr, key: gameblog, url: https://www.gameblog.fr/rssmap/rss_all.xml }
+        - { lang: fr, key: jeuxvideo_com, url: https://www.jeuxvideo.com/rss/rss-news.xml }
+        - { lang: fr, key: lemondeinformatique, url: https://www.lemondeinformatique.fr/flux-rss/thematique/toutes-les-actualites/rss.xml }
+        - { lang: fr, key: lesnumeriques, url: https://www.lesnumeriques.com/rss.xml }
+        - { lang: fr, key: numerama, url: https://www.numerama.com/feed }
+        - { lang: fr, key: phonandroid, url: https://www.phonandroid.com/feed }
+        - { lang: fr, key: telerama, url: https://www.telerama.fr/rss/ecrans.xml }
+        - { lang: fr, key: zdnet, url: https://www.zdnet.fr/feeds/rss/actualites/ }
+
     steps:
     - name: Repository
       uses: actions/checkout@v3
@@ -19,7 +52,7 @@ jobs:
     - name: Demo cache
       uses: actions/cache@v3
       with:
-        key: deno
+        key: rss-deno
         path: |
           ~/.deno
           ~/.cache/deno
@@ -30,12 +63,12 @@ jobs:
     - name: Load cache database
       uses: actions/cache@v3
       with:
-        key: cache-rss
+        key: rss-cache-${{ matrix.key }}
         path: cache.sqlite
 
     - name: Run Deno
       env: ${{ secrets }}
-      run: deno run --allow-all rss/provider.ts
+      run: deno run --allow-all rss/provider.ts ${{ matrix.lang }} ${{ matrix.url }}
 
     - name: Remove cache
       if: always()
@@ -46,10 +79,10 @@ jobs:
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"\
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/repos/${{ github.repository }}/actions/caches?key=cache-rss
+          https://api.github.com/repos/${{ github.repository }}/actions/caches?key=rss-cache-${{ matrix.key }}
 
     - name: Save cache
       uses: actions/cache@v3
       with:
-        key: cache-rss
+        key: rss-cache-${{ matrix.key }}
         path: cache.sqlite

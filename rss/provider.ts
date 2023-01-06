@@ -60,6 +60,7 @@ for(const [language, urls] of Object.entries(feeds)) {
       }, TOKEN)
       if(response !== null) {
         cache.query("INSERT INTO rss (url) VALUES (?)", [url])
+        console.log("[OK]", url)
       }
     }
   }

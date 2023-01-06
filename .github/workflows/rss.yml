@@ -3,7 +3,7 @@ name: RSS provider
 on:
   workflow_dispatch:
   schedule:
-  - cron: "*/5 * * * *"
+  - cron: "*/20 * * * *"
   push: { branches: [ main ] }
 
 permissions:

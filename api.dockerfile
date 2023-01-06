@@ -7,4 +7,4 @@ COPY utils.ts .
 
 EXPOSE 8080
 
-CMD ["run", "--allow-net", "server.ts"]
+CMD ["run", "--allow-net", "--allow-env", "server.ts"]

@@ -17,7 +17,7 @@
  */
 
 import { serve } from "https://deno.land/std/http/server.ts"
-import { request } from "../utils.ts"
+import { request } from "./utils.ts"
 
 const TOKEN = Deno.env.get("SOCIAL_EXPLORER_TOKEN") || "local"
 const GORSE = Deno.env.get("SOCIAL_EXPLORER_GORSE") || "http://127.0.0.1:8088"

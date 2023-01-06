@@ -23,14 +23,18 @@ export async function request(
   token?: string,
 ) {
   try {
+    const controller = new AbortController()
+    const timeout = setTimeout(controller.abort.bind(controller), 10000)
     const response  = await fetch(url, {
       method,
       body: body ? JSON.stringify(body) : undefined,
       headers: {
         ...(body ? { "Content-Type": "application/json" } : {}),
         ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-      }
+      },
+      signal: controller.signal,
     })
+    clearTimeout(timeout)
     if(response.status === 200) {
       return safelyParseJSON(await response.text())
     }

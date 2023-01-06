@@ -11,7 +11,7 @@ permissions:
   actions: write
 
 jobs:
-  rss:
+  sync:
     runs-on: ubuntu-latest
 
     strategy:

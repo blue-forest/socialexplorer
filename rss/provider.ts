@@ -59,7 +59,7 @@ for(const entry of data.entries) {
   const response = await request("POST", `${API}/providers/rss`, {
     id: new Hash("md5").digestString(url).hex(),
     url,
-    categories: [ language, hostname ],
+    categories: [ "rss", language, hostname ],
     labels: await extractTags(url),
     date: (entry?.published ? new Date(entry.published) : new Date()).toISOString(),
   }, TOKEN)
